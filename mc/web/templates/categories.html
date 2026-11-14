@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block body %}
+{% with current = "categories" %}{% include "_settings_nav.html" %}{% endwith %}
+<form method="post" action="/admin/categories" class="card">
+  <h2>Categories</h2>
+  <p class="hint">Every story gets one category. Keywords drive the automatic classifier (comma or line separated;
+    <span class="mono">archaeolog*</span> matches any ending, phrases match whole). Weight 0 means never pick from it;
+    a cap limits its story pages per paper. The science family should supply roughly a third to a half of a paper.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>On</th><th>Name</th><th>Family</th><th>Weight</th><th>Fav</th><th>Cap</th><th>Keywords</th><th></th></tr></thead>
+    <tbody>
+    {% for c in cats %}{% set i = loop.index0 %}
+      <tr>
+        <td><input type="checkbox" name="enabled.{{ i }}" {% if c.enabled %}checked{% endif %}></td>
+        <td style="min-width:150px"><input type="text" name="name.{{ i }}" value="{{ c.name }}"></td>
+        <td><select name="family.{{ i }}">{% for f in ['science', 'health', 'tech', 'culture'] %}<option {% if c.family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}</select></td>
+        <td style="width:80px"><input type="number" step="0.1" name="weight.{{ i }}" value="{{ c.weight }}"></td>
+        <td><input type="checkbox" name="favorite.{{ i }}" {% if c.favorite or c.name in cfg.editorial.favorites %}checked{% endif %}></td>
+        <td style="width:70px"><input type="number" name="cap.{{ i }}" value="{{ c.cap if c.cap is not none else '' }}"></td>
+        <td style="min-width:280px"><textarea name="keywords.{{ i }}" rows="2">{{ c.keywords|join(', ') }}</textarea></td>
+        <td><label class="check" style="font-weight:500;margin:0"><input type="checkbox" name="delete.{{ i }}"> delete</label></td>
+      </tr>
+    {% endfor %}
+      <tr>
+        <td></td><td><input type="text" name="new.name" placeholder="Add a category"></td>
+        <td><select name="new.family">{% for f in ['science', 'health', 'tech', 'culture'] %}<option>{{ f }}</option>{% endfor %}</select></td>
+        <td colspan="3"></td><td><textarea name="new.keywords" rows="2" placeholder="keywords, phrases, stem*"></textarea></td><td></td>
+      </tr>
+    </tbody>
+  </table></div>
+  <div class="actions"><button>Save categories</button></div>
+</form>
+{% endblock %}

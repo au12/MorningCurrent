@@ -1,0 +1,17 @@
+# Settings of the edition in this folder (No. 18 of the original household paper, written by hand).
+paper:
+  title: The Morning Current
+  tagline: Good news, told in full
+  volume: I
+location:
+  name: Greenville, S.C.
+  lat: 34.8526
+  lon: -82.3940
+  elevation: 300
+  tz: America/New_York
+editorial:
+  favorites: [Cars & Motorsport, Photography & Imaging, Robotics, Home Tech & Self-Hosting, Makers & DIY, Engineering & Energy]
+  reader_profile: >-
+    Technical and curious: cars, photography, robotics and mechatronics, home tech and self-hosting,
+    makers/DIY, engineering and energy; science, nature and space are always welcome.
+setup_complete: true

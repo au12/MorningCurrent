@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block body %}
+{% set fmt = "%H:%M" if cfg.format.clock == '24h' else "%-I:%M %p" %}
+<div class="grid3">
+  <section class="card">
+    <div class="stat">{% if last %}{{ last.date }}{% else %}&mdash;{% endif %}<small>Latest edition</small></div>
+    {% if last %}
+      <p style="margin:10px 0 4px"><b>{{ last.lead or last.title }}</b></p>
+      <p class="hint">{{ last.pages or '?' }} pages{% if last.errors %} &middot; <span class="bad">{{ last.errors }} QA errors</span>{% elif last.cosmetic %} &middot; {{ last.cosmetic }} short columns{% endif %}
+        {% set good = last.prints | selectattr("ok") | list %}{% if good %} &middot; printed {{ good[-1].at[11:16] }}{% endif %}</p>
+      <div class="actions">
+        {% if last.has_reading %}<a class="btn" href="/read/{{ last.date }}" target="_blank">Read</a>{% endif %}
+        <a class="btn ghost" href="/admin/editions/{{ last.date }}">Details</a>
+        {% if last.has_booklet %}<form method="post" action="/admin/editions/{{ last.date }}/print"><button class="ghost">Print now</button></form>{% endif %}
+      </div>
+    {% else %}<p class="hint">No editions yet.</p>{% endif %}
+  </section>
+  <section class="card">
+    <div class="stat">{{ counts.get('candidate', 0) + counts.get('pinned', 0) }}<small>Candidate stories</small></div>
+    <p class="hint" style="margin-top:10px">{{ feeds|length }} feeds{% if feed_errors %} &middot; <span class="bad">{{ feed_errors|length }} failing</span>{% endif %}
+      {% if last_ingest.at %} &middot; fetched {{ last_ingest.at[5:16].replace('T', ' ') }} UTC{% endif %}</p>
+    <div class="actions">
+      <form method="post" action="/admin/ingest"><button class="ghost">Fetch feeds now</button></form>
+      <a class="btn ghost" href="/admin/desk">Editor&rsquo;s desk</a>
+    </div>
+  </section>
+  <section class="card">
+    <div class="stat">{% if next_runs %}{{ next_runs[0].at.strftime(fmt) }}{% else %}&mdash;{% endif %}<small>Next scheduled job</small></div>
+    <ul class="hint" style="padding-left:18px;margin:10px 0 0">
+      {% for r in next_runs[:4] %}<li>{{ {'build': 'Make the paper', 'ingest': 'Fetch feeds', 'print-weekday': 'Print (weekday)', 'print-weekend': 'Print (weekend)'}.get(r.id, r.id) }}: {{ r.at.strftime("%a " + fmt) }}</li>{% endfor %}
+      {% if not cfg.schedule.print_enabled %}<li>Automatic printing is off</li>{% endif %}
+    </ul>
+    <form method="post" action="/admin/build" class="actions" style="align-items:end">
+      <div style="flex:1"><label for="bd" style="margin-top:0">Make the paper for</label><input id="bd" type="date" name="date" value="{{ build_date }}"></div>
+      <button>Build now</button>
+    </form>
+  </section>
+</div>
+
+{% if running %}
+<section class="card" id="jobcard">
+  <h2>Working: {{ running[0].label }}</h2>
+  <pre id="joblog">{{ running[0].log }}</pre>
+  <p class="hint">This page refreshes the log every few seconds.</p>
+</section>
+{% endif %}
+
+<div class="grid">
+  <section class="card">
+    <h2>Recent editions</h2>
+    {% if editions %}<div class="scroll"><table>
+      <thead><tr><th>Date</th><th>Lead</th><th>QA</th><th>Printed</th></tr></thead>
+      <tbody>{% for e in editions %}
+        <tr><td><a href="/admin/editions/{{ e.date }}"><b>{{ e.date }}</b></a></td>
+          <td>{{ (e.lead or e.title)[:60] }}</td>
+          <td>{% if e.errors %}<span class="pill off">{{ e.errors }} errors</span>{% elif e.has_booklet %}<span class="pill on">ok</span>{% else %}<span class="pill">not built</span>{% endif %}</td>
+          <td>{% set good = e.prints | selectattr("ok") | list %}{% if good %}<span class="pill on">{{ good[-1].at[5:16].replace("T"," ") }}</span>{% else %}<span class="pill">&mdash;</span>{% endif %}</td></tr>
+      {% endfor %}</tbody></table></div>
+    {% else %}<p class="muted">Nothing yet. Fetch feeds, then Build now.</p>{% endif %}
+  </section>
+  <section class="card log">
+    <h2>Activity</h2>
+    {% if activity %}<ul>{% for a in activity %}<li><span class="t">{{ a.at[5:16].replace("T"," ") }}</span><span class="{{ '' if a.ok else 'bad' }}">{{ a.msg }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nothing yet.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>Feeds</h2>
+    {% if feed_errors %}<p class="bad">Failing: {% for f in feed_errors %}{{ f.name }} ({{ f.last_error }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+    <p class="hint">Candidates: {{ counts.get('candidate', 0) }} &middot; pinned {{ counts.get('pinned', 0) }} &middot; rejected {{ counts.get('rejected', 0) }} &middot; printed {{ counts.get('used', 0) }}</p>
+    <div class="actions"><a class="btn ghost" href="/admin/sources">Manage sources</a></div>
+  </section>
+  <section class="card">
+    <h2>Push API</h2>
+    {% if push_enabled %}<p><span class="pill on">enabled</span> Send finished editions here from another machine (or the Claude Code routine):</p>
+<pre>curl -H "Authorization: Bearer $PUSH_TOKEN" \
+  -F file=@booklet.pdf -F reading=@reading.pdf \
+  -F date={{ today }} {{ base_url }}/api/editions</pre>
+    {% else %}<p><span class="pill">disabled</span> Set <span class="mono">PUSH_TOKEN</span> (or a token under Settings &rsaquo; Schedule &amp; delivery) to accept editions from elsewhere.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if running %}<script>
+const jid = "{{ running[0].id }}";
+async function poll(){
+  try{
+    const r = await fetch('/admin/jobs/' + jid); const j = await r.json();
+    const pre = document.getElementById('joblog'); pre.textContent = j.log; pre.scrollTop = pre.scrollHeight;
+    if (j.status === 'running' || j.status === 'queued') setTimeout(poll, 3000); else setTimeout(() => location.href = '/admin', 1500);
+  }catch(e){ setTimeout(poll, 5000); }
+}
+setTimeout(poll, 2000);
+</script>{% endif %}
+{% endblock %}

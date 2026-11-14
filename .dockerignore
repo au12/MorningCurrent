@@ -1,0 +1,8 @@
+# Only requirements.txt, mc/ and docker/ go into the image.
+*
+!requirements.txt
+!mc/
+!docker/
+**/__pycache__
+**/*.pyc
+mc/data/**/*.tmp

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Setup{% endblock %}
+{% block body %}
+{% set labels = ['Paper & place', 'Format', 'Interests', 'Sources', 'Schedule & printer', 'AI (optional)', 'Finish'] %}
+<div class="steps">{% for l in labels %}<a href="/admin/setup?step={{ loop.index }}" style="text-decoration:none"><span class="{{ 'on' if loop.index == step else '' }}">{{ loop.index }}. {{ l }}</span></a>{% endfor %}</div>
+
+<form method="post" action="/admin/setup" class="card">
+  <input type="hidden" name="step" value="{{ step }}">
+  <h2>{{ labels[step - 1] }}</h2>
+
+  {% if step == 1 %}
+  <p>Welcome. A few questions and the first paper will be on its way; everything can be changed later in Settings.</p>
+  <div class="grid">
+    <div><label for="title">Name of the paper</label><input id="title" type="text" name="title" value="{{ cfg.paper.title }}" required></div>
+    <div><label for="tagline">Tagline</label><input id="tagline" type="text" name="tagline" value="{{ cfg.paper.tagline }}"></div>
+    <div><label for="household">Who it is for (optional)</label><input id="household" type="text" name="household" value="{{ cfg.paper.household }}" placeholder="e.g. the Smiths of Elm Street"></div>
+    <div><label for="place">Place, for the almanac</label><input id="place" type="text" name="place" value="{{ cfg.location.name }}" required></div>
+    <div><div class="row"><div><label for="lat">Latitude</label><input id="lat" type="number" step="0.0001" name="lat" value="{{ cfg.location.lat }}" required></div>
+      <div><label for="lon">Longitude</label><input id="lon" type="number" step="0.0001" name="lon" value="{{ cfg.location.lon }}" required></div></div>
+      <button type="button" class="ghost small" style="margin-top:8px" onclick="locate()">Use this device's location</button>
+      <p class="hint" id="lochint">Sunrise, sunset, the moon and the night sky are worked out for this point. West longitudes are negative.</p></div>
+    <div><label for="elevation">Elevation (metres)</label><input id="elevation" type="number" step="1" name="elevation" value="{{ cfg.location.elevation }}"></div>
+    <div><label for="tz">Time zone</label><select id="tz" name="tz">{% for z in timezones %}<option {% if z == cfg.location.tz %}selected{% endif %}>{{ z }}</option>{% endfor %}</select>
+      <button type="button" class="ghost small" style="margin-top:8px" onclick="detectTz()">Use this browser's time zone</button></div>
+    <div><label for="clock">Clock</label><select id="clock" name="clock"><option value="24h" {% if cfg.format.clock == '24h' %}selected{% endif %}>24-hour (06:30)</option>
+      <option value="12h" {% if cfg.format.clock == '12h' %}selected{% endif %}>12-hour (6:30 a.m.)</option></select>
+      <label for="units">Units</label><select id="units" name="units">{% for u in ['imperial', 'metric', 'both'] %}<option {% if cfg.format.units == u %}selected{% endif %}>{{ u }}</option>{% endfor %}</select></div>
+  </div>
+
+  {% elif step == 2 %}
+  <div class="grid">
+    <div><label for="profile">Paper size</label>
+      <select id="profile" name="profile">{% for k, l in profiles %}<option value="{{ k }}" {% if k == cfg.format.profile %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      <p class="hint">Booklets print on both sides of a sheet, two pages per side, and fold once into a little tabloid.
+        Flat papers print one page per side and staple in the corner.</p></div>
+    <div><label for="pages">Pages on a normal day</label>
+      <select id="pages" name="pages">{% for n in [8, 12, 16, 20, 24] %}<option {% if n == cfg.format.pages %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+      <p class="hint">16 pages is about a 25-minute read. Thin news days drop to 12. 8 pages needs three or four sections at most.</p></div>
+  </div>
+  <label>Sections after the stories</label>
+  <div class="checks">{% for k, l in sections %}<label class="check"><input type="checkbox" name="sections" value="{{ k }}" {% if k in cfg.format.sections %}checked{% endif %}> {{ l }}</label>{% endfor %}</div>
+  <p class="hint">Each section is one page; the rest of the paper is stories, with a two-page Deep Dive in the middle.</p>
+
+  {% elif step == 3 %}
+  <label>Favourite subjects</label>
+  <p class="hint">Every category can appear; about three stories a day come from these.</p>
+  <div class="checks">{% for c in cats %}<label class="check"><input type="checkbox" name="favorites" value="{{ c }}" {% if c in favorites %}checked{% endif %}> {{ c }}</label>{% endfor %}</div>
+  <label for="reader">About the reader (optional)</label>
+  <textarea id="reader" name="reader" rows="4">{{ cfg.editorial.reader_profile }}</textarea>
+  <p class="hint">A sentence or two used by AI writing and research, if you turn AI on. Without AI it is not used.</p>
+
+  {% elif step == 4 %}
+  <p class="hint">Choose where stories come from. Public-domain and Creative Commons sources can be printed in full without AI;
+    for copyrighted sources the paper prints the headline, the publisher's own summary and a QR code to the article
+    (or, with AI on, an original short write-up).</p>
+  {% for p in packs %}
+  <label class="check" style="border-top:1px solid var(--rule);padding-top:10px">
+    <input type="checkbox" name="packs" value="{{ p.id }}" {% if p.on %}checked{% endif %}>
+    <span>{{ p.name }} <span class="pill">{{ p.sources|length }} feeds</span><br>
+      <span class="hint" style="font-weight:400">{{ p.description }}</span><br>
+      <span class="hint" style="font-weight:400">{% for s in p.sources %}{{ s.name }}{% if not loop.last %}, {% endif %}{% endfor %}</span></span>
+  </label>
+  {% endfor %}
+  <p class="hint">Individual feeds, licenses and your own sources (or an OPML file) can be managed later under Sources.</p>
+
+  {% elif step == 5 %}
+  <div class="grid">
+    <div><label for="build_time">Make the paper at</label><input id="build_time" type="time" name="build_time" value="{{ cfg.schedule.build_time }}">
+      <p class="hint">After noon makes the next day's paper, so 21:00 works as well as 00:30.</p></div>
+    <div><label class="check"><input type="checkbox" name="print_enabled" {% if cfg.schedule.print_enabled %}checked{% endif %}> Print it automatically</label>
+      <div class="row"><div><label for="weekday_time">Weekdays at</label><input id="weekday_time" type="time" name="weekday_time" value="{{ cfg.schedule.weekday_time }}"></div>
+        <div><label for="weekend_time">Weekends at</label><input id="weekend_time" type="time" name="weekend_time" value="{{ cfg.schedule.weekend_time }}"></div></div></div>
+    <div><label for="cups_server">CUPS server (optional)</label><input id="cups_server" type="text" name="cups_server" value="{{ cfg.printer.cups_server }}" placeholder="192.168.1.20:631">
+      <p class="hint">The computer or printer that shares your printer over IPP/CUPS.</p></div>
+    <div><label for="printer">Printer queue</label><input id="printer" type="text" name="printer" value="{{ cfg.printer.printer }}" list="queues">
+      <datalist id="queues"></datalist>
+      <button type="button" class="ghost small" style="margin-top:8px" onclick="findQueues()">Find printers</button>
+      <p class="hint">The printer needs duplex for booklets. You can skip printing and read or download each paper instead.</p></div>
+  </div>
+
+  {% elif step == 6 %}
+  <p>The paper needs no AI. With an API key, stories from copyrighted sources are rewritten as short original articles,
+    crossword clues get sharper, and (in research mode) Claude searches the web for stories that fit your interests.
+    Every quote and number is checked against the source before it prints.</p>
+  <div class="grid">
+    <div><label>Provider</label>
+      {% for v, l in [('none', 'Off: no AI'), ('claude', 'Claude (Anthropic API)'), ('openai', 'OpenAI-compatible (Ollama, LM Studio, OpenAI...)')] %}
+      <label class="check"><input type="radio" name="provider" value="{{ v }}" {% if cfg.ai.provider == v %}checked{% endif %} onchange="aiFields()"> {{ l }}</label>{% endfor %}</div>
+    <div id="aifields">
+      <label for="model">Model</label><input id="model" type="text" name="model" value="{{ cfg.ai.model }}" list="models">
+      <datalist id="models"><option>claude-sonnet-5-5</option><option>claude-haiku-5-5</option><option>claude-opus-5-5</option></datalist>
+      <label for="api_key">API key</label><input id="api_key" type="password" name="api_key" autocomplete="off"
+        placeholder="{{ 'set in the environment' if ai_key == 'env' else ('saved; type to replace' if ai_key == 'file' else 'sk-...') }}">
+      <div id="baseurl"><label for="base_url">Endpoint</label><input id="base_url" type="text" name="base_url" value="{{ cfg.ai.base_url }}" placeholder="http://ollama:11434/v1"></div>
+      <label for="budget">Budget per paper (USD)</label><input id="budget" type="number" step="0.05" name="budget" value="{{ cfg.ai.max_cost_usd }}">
+      <p class="hint">When the budget is spent the build carries on without AI. A typical Claude Sonnet paper costs well under a dollar.</p>
+    </div>
+  </div>
+
+  {% else %}
+  <p>All set. Here is what you chose:</p>
+  <table>
+    <tr><th style="width:170px">Paper</th><td>{{ cfg.paper.title }}{% if cfg.paper.tagline %} &middot; <i>{{ cfg.paper.tagline }}</i>{% endif %}</td></tr>
+    <tr><th>Place</th><td>{{ cfg.location.name }} ({{ cfg.location.lat }}, {{ cfg.location.lon }}), {{ cfg.location.tz }}</td></tr>
+    <tr><th>Format</th><td>{{ dict(profiles)[cfg.format.profile] }}, {{ cfg.format.pages }} pages</td></tr>
+    <tr><th>Sections</th><td>{{ cfg.format.sections|join(', ') }}</td></tr>
+    <tr><th>Favourites</th><td>{{ favorites|join(', ') or 'none' }}</td></tr>
+    <tr><th>Sources</th><td>{{ cfg.sources.feeds|length }} feeds</td></tr>
+    <tr><th>Schedule</th><td>made at {{ cfg.schedule.build_time }}{% if cfg.schedule.print_enabled %}; printed at {{ cfg.schedule.weekday_time }} weekdays, {{ cfg.schedule.weekend_time }} weekends{% else %}; not printed automatically{% endif %}</td></tr>
+    <tr><th>AI</th><td>{{ 'off' if cfg.ai.provider == 'none' else cfg.ai.provider ~ ' (' ~ cfg.ai.model ~ ', up to $' ~ cfg.ai.max_cost_usd ~ ' a paper)' }}</td></tr>
+  </table>
+  <p class="hint">The first build fetches every feed, so it takes a few minutes. You can watch it in the press room.</p>
+  {% endif %}
+
+  <div class="actions">
+    {% if step > 1 %}<a class="btn ghost" href="/admin/setup?step={{ step - 1 }}">Back</a>{% endif %}
+    <button>{{ 'Make my first paper' if step == 7 else 'Next' }}</button>
+    {% if step < 7 and cfg.setup_complete %}<a class="btn ghost" href="/admin">Skip to the press room</a>{% endif %}
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+function locate(){
+  const h = document.getElementById('lochint');
+  if(!navigator.geolocation){ h.textContent = 'This browser cannot share its location; type the coordinates instead.'; return; }
+  h.textContent = 'Asking the browser...';
+  navigator.geolocation.getCurrentPosition(p => {
+    document.getElementById('lat').value = p.coords.latitude.toFixed(4);
+    document.getElementById('lon').value = p.coords.longitude.toFixed(4);
+    if (p.coords.altitude) document.getElementById('elevation').value = Math.round(p.coords.altitude);
+    h.textContent = 'Got it. Check the place name matches.';
+  }, e => { h.textContent = 'No location (' + e.message + '). Browsers only share it over https or on localhost.'; });
+}
+function detectTz(){
+  const z = Intl.DateTimeFormat().resolvedOptions().timeZone, s = document.getElementById('tz');
+  if ([...s.options].some(o => o.value === z)) s.value = z;
+}
+async function findQueues(){
+  const fd = new FormData(); fd.append('cups_server', document.getElementById('cups_server').value);
+  const r = await fetch('/printer/test', {method:'POST', body:fd}); const j = await r.json();
+  if(!j.ok){ alert('Could not reach CUPS: ' + (j.error || 'unknown error')); return; }
+  const dl = document.getElementById('queues'); dl.innerHTML = '';
+  j.queues.forEach(q => { const o = document.createElement('option'); o.value = q; dl.appendChild(o); });
+  if (j.queues.length === 1) document.getElementById('printer').value = j.queues[0];
+  alert(j.queues.length ? 'Found: ' + j.queues.join(', ') : 'Connected, but no shared printers were found.');
+}
+function aiFields(){
+  const v = (document.querySelector('input[name=provider]:checked') || {}).value;
+  const f = document.getElementById('aifields'); if (!f) return;
+  f.style.display = v === 'none' ? 'none' : '';
+  document.getElementById('baseurl').style.display = v === 'openai' ? '' : 'none';
+}
+aiFields();
+</script>
+{% endblock %}

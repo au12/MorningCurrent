@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Editor's desk{% endblock %}
+{% block body %}
+<section class="card">
+  <h2>Editor's desk</h2>
+  <p class="hint">Stories fetched from your sources, best first. <b>Pin</b> guarantees a story runs in the next paper (if it fits);
+    <b>Hold</b> keeps it for a later day; <b>Kill</b> drops it. Changing a category teaches the classifier.</p>
+  <form method="get" action="/admin/desk" class="row" style="flex-wrap:wrap;margin-top:10px">
+    <div><label for="status">Show</label>
+      <select id="status" name="status">
+        {% for v, l in [('candidate', 'Candidates (incl. pinned and held)'), ('pinned', 'Pinned'), ('backlog', 'Held'), ('new', 'New (not screened yet)'),
+                        ('used', 'Already printed'), ('killed', 'Killed'), ('rejected', 'Filtered out'), ('', 'Everything')] %}
+        <option value="{{ v }}" {% if v == status %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></div>
+    <div><label for="category">Category</label>
+      <select id="category" name="category"><option value="">All</option>{% for c in categories %}<option {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div><label for="q">Search</label><input id="q" type="text" name="q" value="{{ q }}" placeholder="headline or source"></div>
+    <div style="flex:none"><button>Filter</button></div>
+    <div style="flex:none"><a class="btn ghost" href="/admin/desk?status={{ status }}&category={{ category|urlencode }}&q={{ q|urlencode }}&plan=1">Preview tomorrow's plan</a></div>
+  </form>
+</section>
+
+{% if plan %}
+<section class="card">
+  <h2>Plan preview</h2>
+  {% if plan.error %}<p class="bad">{{ plan.error }}</p>
+  {% else %}
+  <p class="hint">What the planner would choose from today's candidates (nothing is saved).</p>
+  <table>
+    <tr><th style="width:150px">Pages</th><td>{{ plan.pages }}</td></tr>
+    <tr><th>Lead</th><td>{{ plan.lead.title }} <span class="pill">{{ plan.lead.source }}</span></td></tr>
+    {% if plan.sidebar %}<tr><th>Sidebar</th><td>{{ plan.sidebar.title }} <span class="pill">{{ plan.sidebar.source }}</span></td></tr>{% endif %}
+    {% if plan.spread %}<tr><th>Deep Dive</th><td>{{ plan.spread.title }} <span class="pill">{{ plan.spread.source }}</span></td></tr>{% endif %}
+    {% for u in plan.units %}
+    <tr><th>{{ u[0]|capitalize }}</th><td>{% for it in u[1] %}{{ it.title }} <span class="pill">{{ it.source }}</span>{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>
+    {% endfor %}
+    <tr><th>Small Wonders</th><td>{% for it in plan.wonders %}{{ it.title }}{% if not loop.last %} &middot; {% endif %}{% endfor %}</td></tr>
+    <tr><th>Reserve</th><td class="muted">{% for it in plan.reserve %}{{ it.title }}{% if not loop.last %} &middot; {% endif %}{% endfor %}</td></tr>
+  </table>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>{{ rows|length }} {{ 'story' if rows|length == 1 else 'stories' }}{% if rows|length == 250 %} (first 250){% endif %}</h2>
+  {% if not rows %}<p class="muted">Nothing here yet. Fetch feeds from the press room, or widen the filter.</p>{% else %}
+  <div class="scroll"><table>
+    <thead><tr><th>Score</th><th>Story</th><th>Category</th><th>Published</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="mono">{{ '%.2f'|format(r.score or 0) }}</td>
+      <td style="min-width:280px"><a href="{{ r.link or r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+        <br><span class="pill">{{ r.source }}</span> <span class="pill" title="how much may be printed without AI">{{ r.tier }}</span>
+        {% if r.words %}<span class="muted mono">{{ r.words }} words</span>{% endif %}
+        {% if r.reason %}<br><span class="hint">{{ r.reason }}</span>{% endif %}</td>
+      <td style="min-width:150px"><form method="post" action="/admin/desk/{{ r.id }}">
+          <input type="hidden" name="action" value="category">
+          <select name="category" onchange="this.form.submit()">{% if not r.category %}<option value="">(none)</option>{% endif %}{% for c in categories %}<option {% if c == r.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></form>
+        {% if r.cat_method %}<span class="hint">{{ r.cat_method }}{% if r.cat_score %} {{ '%.2f'|format(r.cat_score) }}{% endif %}</span>{% endif %}</td>
+      <td class="mono">{{ (r.published or r.seen or '')[:10] }}</td>
+      <td>{% set lab = {'pinned': 'pinned', 'backlog': 'held', 'killed': 'killed', 'used': 'printed ' ~ (r.used_in or ''), 'rejected': 'filtered', 'new': 'new', 'candidate': 'candidate'} %}
+        <span class="pill {{ 'on' if r.status == 'pinned' else ('off' if r.status in ('killed', 'rejected') else '') }}">{{ lab.get(r.status, r.status) }}</span></td>
+      <td style="white-space:nowrap"><form method="post" action="/admin/desk/{{ r.id }}">
+        {% if r.status != 'pinned' %}<button class="small" name="action" value="pin">Pin</button>{% endif %}
+        {% if r.status != 'backlog' %}<button class="small ghost" name="action" value="backlog">Hold</button>{% endif %}
+        {% if r.status not in ('candidate',) %}<button class="small ghost" name="action" value="candidate">Restore</button>{% endif %}
+        {% if r.status != 'killed' %}<button class="small danger" name="action" value="kill">Kill</button>{% endif %}
+      </form></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}

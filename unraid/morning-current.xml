@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>morning-current</Name>
+  <Repository>ghcr.io/au12/morning-current:latest</Repository>
+  <Registry>https://github.com/au12/MorningCurrent/pkgs/container/morning-current</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/au12/MorningCurrent/issues</Support>
+  <Project>https://github.com/au12/MorningCurrent</Project>
+  <Overview>The Morning Current makes a printed morning newspaper every night from RSS feeds you choose: full stories from public-domain and Creative Commons sources, headlines and QR codes for the rest, an almanac computed for your town, and a page of fresh puzzles (crossword, sudoku, cryptogram and more). It lays the paper out as a fold-in-half booklet, checks every page, and can print it on a schedule through CUPS. Everything runs without AI; add an Anthropic API key to have Claude write and research stories. Open the web UI and follow the setup wizard.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/au12/MorningCurrent/main/unraid/morning-current.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/au12/MorningCurrent/main/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>A printer shared over CUPS/IPP is optional; papers can also be read in the browser, emailed or copied to a folder.</Requires>
+  <Config Name="Web UI" Target="8080" Default="8087" Mode="tcp" Description="Press room, settings and the public reader" Type="Port" Display="always" Required="true" Mask="false">8087</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/morning-current" Mode="rw" Description="Settings, editions, the article database and logs. To keep a Morning Press archive, point this at its appdata folder (it is upgraded in place)." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/morning-current</Config>
+  <Config Name="Admin password" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Sign-in for the press room. If blank, one is generated and printed in the container log." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Anthropic API key" Target="ANTHROPIC_API_KEY" Default="" Mode="" Description="Optional: lets Claude write and research stories (can also be entered in Settings &gt; AI)" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="CUPS server" Target="CUPS_SERVER" Default="" Mode="" Description="Optional print server, host:631 (can also be set in Settings &gt; Schedule &amp; delivery)" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Push token" Target="PUSH_TOKEN" Default="" Mode="" Description="Optional bearer token for the API (push finished editions, trigger builds). Leave blank to disable the API." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Output folder" Target="/output" Default="" Mode="rw" Description="Optional: set Settings &gt; Schedule &amp; delivery &gt; Copy PDFs to folder to /output to get every paper here" Type="Path" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User that owns the data folder" Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group that owns the data folder" Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Time zone (logs)" Target="TZ" Default="America/New_York" Mode="" Description="Log timestamps only; the paper's own time zone is chosen in the setup wizard" Type="Variable" Display="advanced" Required="false" Mask="false">America/New_York</Config>
+  <Config Name="HTTPS-only cookie" Target="COOKIE_SECURE" Default="false" Mode="" Description="true if you only reach the app over https (reverse proxy)" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+</Container>

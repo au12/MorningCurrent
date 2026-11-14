@@ -1,0 +1,12 @@
+{
+ "jump": 8,
+ "turn": 13,
+ "cal_rows": 11,
+ "lookup": false,
+ "note_lines": 11,
+ "extra": {
+  "bambu": [
+   "A hypercar you ride, head first"
+  ]
+ }
+}

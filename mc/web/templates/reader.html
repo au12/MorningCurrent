@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ cfg.paper.title }} · {{ e.short }}</title>
+<meta name="description" content="{{ cfg.paper.title }}, {{ e.pretty }}">
+<link rel="icon" type="image/png" href="/static/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1b1916">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<style>
+@font-face{font-family:"UnifrakturMaguntia";src:url(/fonts/unifrakturmaguntia-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Libre Franklin";src:url(/fonts/libre-franklin-latin-500-normal.woff2) format("woff2");font-weight:500}
+@font-face{font-family:"Libre Franklin";src:url(/fonts/libre-franklin-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Libre Franklin";src:url(/fonts/libre-franklin-latin-800-normal.woff2) format("woff2");font-weight:800}
+:root{
+  --desk:#e6e1d6; --ink:#1d1b18; --muted:#6f685c; --bar:rgba(246,242,234,.86); --rule:#d3cbbb;
+  --btn:#fffdf8; --btnh:#f1ece2; --shadow:0 18px 40px -18px rgba(40,30,15,.45);
+}
+@media (prefers-color-scheme: dark){
+  :root{--desk:#1c1a17; --ink:#ece6da; --muted:#a39a8b; --bar:rgba(28,26,23,.86); --rule:#3a352d;
+        --btn:#2a2722; --btnh:#35312a; --shadow:0 18px 40px -16px rgba(0,0,0,.8);}
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--desk);color:var(--ink);font:500 14px/1.4 "Libre Franklin",system-ui,sans-serif;overflow:hidden}
+a{color:inherit;text-decoration:none}
+.app{display:grid;grid-template-rows:auto 1fr auto;height:100vh;height:100dvh}
+header,footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--bar);
+  backdrop-filter:saturate(1.2) blur(8px);-webkit-backdrop-filter:saturate(1.2) blur(8px)}
+header{border-bottom:1px solid var(--rule);padding-top:max(10px,env(safe-area-inset-top))}
+footer{border-top:1px solid var(--rule);padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.brand{font-family:"UnifrakturMaguntia",serif;font-size:24px;line-height:1;white-space:nowrap}
+.meta{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.links{display:flex;gap:6px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;min-width:34px;padding:0 12px;border-radius:17px;border:1px solid var(--rule);
+  background:var(--btn);color:var(--ink);font:700 12px "Libre Franklin",sans-serif;letter-spacing:.04em;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--btnh)} .btn:disabled{opacity:.35;cursor:default}
+.btn svg{width:16px;height:16px;flex:none}
+.btn.icon{padding:0;width:34px}
+.stage{position:relative;min-height:0;padding:18px 16px}
+#book{width:100%;height:100%;margin:0 auto}
+.page{background:#fff;overflow:hidden}
+.page img{display:block;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .35s}
+.page img.ready{opacity:1}
+.page .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b3ab9c;font:600 11px "Libre Franklin",sans-serif;letter-spacing:.14em;text-transform:uppercase}
+.page img.ready + .wait{display:none}
+.stf__parent{box-shadow:none}
+.stf__block{filter:drop-shadow(0 14px 22px rgba(40,30,15,.28))}
+@media (prefers-color-scheme: dark){.stf__block{filter:drop-shadow(0 14px 26px rgba(0,0,0,.65))}}
+.count{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:9.5em;text-align:center}
+.nav{display:flex;align-items:center;gap:10px;margin:0 auto}
+.progress{position:absolute;left:0;top:0;height:2px;background:var(--ink);opacity:.55;width:0;transition:width .25s,opacity .6s}
+.err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
+.hide-sm{display:inline} .sm-only{display:none}
+@media (max-width:560px){.hide-sm{display:none}.sm-only{display:block}.brand{font-size:20px}.meta{display:none}}
+.veil{position:fixed;inset:0;background:rgba(20,15,8,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--btn);border-left:1px solid var(--rule);z-index:21;
+  transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+body.open .veil{opacity:1;pointer-events:auto} body.open .drawer{transform:none}
+.drawer h2{font:800 13px "Libre Franklin",sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0;padding:16px 18px;
+  border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;padding-top:max(16px,env(safe-area-inset-top))}
+.drawer ol{list-style:none;margin:0;padding:6px 0;overflow-y:auto;flex:1}
+.drawer li{padding:10px 18px;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:2.6em 1fr auto;gap:4px 10px;align-items:start}
+.drawer .pg{font:800 12px "Libre Franklin",sans-serif;color:var(--muted);padding-top:2px;cursor:pointer;background:none;border:0;text-align:left}
+.drawer .hd{font-size:14px;line-height:1.3;cursor:pointer}
+.drawer .src{grid-column:2;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.drawer .src a{text-decoration:underline}
+.votes{display:flex;gap:4px;grid-row:1/3;grid-column:3}
+.votes button{width:30px;height:30px;border-radius:15px;border:1px solid var(--rule);background:transparent;cursor:pointer;font-size:14px;line-height:1;color:var(--ink)}
+.votes button.on{background:var(--ink);color:var(--btn);border-color:var(--ink)}
+.drawer .note{font-size:12px;color:var(--muted);padding:10px 18px;border-top:1px solid var(--rule)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <a class="brand" href="/read" title="Today's paper">{{ cfg.paper.title }}</a>
+    <div class="meta">{{ e.pretty }}{% if e.title %} &middot; {{ e.title }}{% endif %}</div>
+    <div class="links">
+      {% if older %}<a class="btn icon" href="/read/{{ older.date }}" title="Previous edition ({{ older.short }})" aria-label="Previous edition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></a>{% endif %}
+      {% if newer %}<a class="btn icon" href="/read/{{ newer.date }}" title="Next edition ({{ newer.short }})" aria-label="Next edition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg></a>{% endif %}
+      {% if stories %}<button class="btn" id="storiesBtn" title="Stories in this edition" aria-label="Stories in this edition"><span class="hide-sm">Stories</span><svg class="sm-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14v14H5zM8 9h8M8 13h8M8 17h5"/></svg></button>{% endif %}
+      <a class="btn" href="/archive" title="All editions"><span class="hide-sm">Archive</span><svg class="sm-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>
+      <a class="btn icon" href="/read/{{ e.date }}.pdf" download title="Download PDF" aria-label="Download PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg></a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="progress" id="progress"></div>
+    <div id="book"></div>
+    <div class="err" id="err">This edition couldn&rsquo;t be opened. <a class="btn" style="margin-left:10px" href="/read/{{ e.date }}.pdf">Open the PDF</a></div>
+  </main>
+
+  <footer>
+    <div class="nav">
+      <button class="btn icon" id="prev" aria-label="Previous page" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <span class="count" id="count">Loading&hellip;</span>
+      <button class="btn icon" id="next" aria-label="Next page" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </footer>
+</div>
+
+{% if stories %}
+<div class="veil" id="veil"></div>
+<aside class="drawer" id="drawer" aria-label="Stories in this edition">
+  <h2>In this edition <button class="btn icon" id="closeDrawer" aria-label="Close">&times;</button></h2>
+  <ol id="storyList"></ol>
+  {% if can_vote %}<div class="note">&#128077; / &#128078; teach the paper what to pick more (or less) of.</div>{% endif %}
+</aside>
+{% endif %}
+
+<script src="/static/vendor/page-flip.browser.js"></script>
+<script type="module">
+import * as pdfjsLib from "/static/vendor/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/static/vendor/pdf.worker.min.mjs";
+
+const PDF_URL = "/read/{{ e.date }}.pdf";
+const stage = document.querySelector(".stage");
+const countEl = document.getElementById("count");
+const prevBtn = document.getElementById("prev"), nextBtn = document.getElementById("next");
+const progress = document.getElementById("progress");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let pdf, total = 0, ratio = 7 / 8.5, flip = null, single = null;
+const images = [];          // object URLs of rendered pages, filled as they finish
+
+function startPage() {
+  const m = location.hash.match(/p=(\d+)/);
+  const n = m ? parseInt(m[1], 10) : 1;
+  return Math.min(Math.max(n, 1), total || n) - 1;
+}
+
+function area() {
+  const cs = getComputedStyle(stage);
+  return {
+    w: stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+    h: stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom),
+  };
+}
+
+// Show one page at a time when two side by side would be too small to read.
+function wantSingle() {
+  const { w, h } = area();
+  return w / h < 1.2 || w < 560;
+}
+
+function label() {
+  if (!flip) return;
+  const i = flip.getCurrentPageIndex();
+  const landscape = flip.getOrientation() === "landscape";
+  let txt;
+  if (landscape && i > 0 && i + 1 < total) txt = `Pages ${i + 1}–${i + 2}`;
+  else txt = `Page ${i + 1}`;
+  countEl.textContent = `${txt} of ${total}`;
+  prevBtn.disabled = i <= 0;
+  nextBtn.disabled = landscape ? (i === 0 ? total <= 1 : i + 2 >= total) : i >= total - 1;
+  history.replaceState(null, "", `#p=${i + 1}`);
+}
+
+function freshBook() {
+  // PageFlip.destroy() removes the book element, so each mount starts from a new one
+  document.getElementById("book")?.remove();
+  const el = document.createElement("div");
+  el.id = "book";
+  stage.appendChild(el);
+  for (let i = 0; i < total; i++) {
+    const div = document.createElement("div");
+    div.className = "page";
+    div.dataset.density = "soft";
+    div.dataset.n = i;
+    const img = document.createElement("img");
+    img.alt = `Page ${i + 1}`;
+    img.draggable = false;
+    if (images[i]) { img.src = images[i]; img.classList.add("ready"); }
+    const wait = document.createElement("div");
+    wait.className = "wait";
+    wait.textContent = "Printing\u2026";
+    div.append(img, wait);
+    el.appendChild(div);
+  }
+  return el;
+}
+
+function mount(at) {
+  if (flip) { flip.destroy(); flip = null; }
+  single = wantSingle();
+  const { w } = area();
+  const el = freshBook();
+  flip = new St.PageFlip(el, {
+    width: 700, height: Math.round(700 / ratio), size: "stretch",
+    // PageFlip shows one page when the book is narrower than 2 x minWidth
+    minWidth: single ? Math.ceil(w / 2) + 1 : 100, maxWidth: 1400,
+    minHeight: 100, maxHeight: 2000,
+    showCover: true, usePortrait: true, autoSize: true,
+    drawShadow: true, maxShadowOpacity: 0.35,
+    flippingTime: reduceMotion ? 1 : 650,
+    mobileScrollSupport: false, swipeDistance: 24, showPageCorners: true,
+    startPage: at,
+  });
+  el.style.minWidth = "0";
+  flip.loadFromHTML(el.querySelectorAll(".page"));
+  flip.on("flip", label);
+  flip.on("changeOrientation", label);
+  label();
+}
+
+function setImage(i, url) {
+  images[i] = url;
+  document.querySelectorAll(`.page[data-n="${i}"] img`).forEach((img) => {
+    img.src = url; img.classList.add("ready");
+  });
+}
+
+async function renderAll(first) {
+  const { w, h } = area();
+  const cssW = single ? Math.min(w, h * ratio) : Math.min(w / 2, h * ratio);
+  const target = Math.min(1800, Math.max(900, Math.round(cssW * Math.min(window.devicePixelRatio || 1, 2.5))));
+  const order = [...Array(total).keys()].sort((a, b) => {
+    const da = (a - first + total) % total, db = (b - first + total) % total; return da - db;
+  });
+  let done = 0;
+  for (const i of order) {
+    const page = await pdf.getPage(i + 1);
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: target / base.width });
+    const c = document.createElement("canvas");
+    c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const ctx = c.getContext("2d", { alpha: false });
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const blob = await new Promise((r) => c.toBlob(r, "image/png"));
+    c.width = c.height = 0;
+    setImage(i, URL.createObjectURL(blob));
+    page.cleanup();
+    progress.style.width = `${(++done / total) * 100}%`;
+  }
+  progress.style.opacity = "0";
+}
+
+prevBtn.onclick = () => flip && flip.flipPrev();
+nextBtn.onclick = () => flip && flip.flipNext();
+addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") { openDrawer(false); return; }
+  if (!flip || ev.metaKey || ev.ctrlKey || ev.altKey || document.body.classList.contains("open")) return;
+  if (["ArrowRight", "PageDown", " "].includes(ev.key)) { ev.preventDefault(); flip.flipNext(); }
+  else if (["ArrowLeft", "PageUp"].includes(ev.key)) { ev.preventDefault(); flip.flipPrev(); }
+  else if (ev.key === "Home") flip.flip(0);
+  else if (ev.key === "End") flip.flip(total - 1);
+});
+
+// ---- stories drawer and feedback
+const STORIES = {{ stories|tojson }}, VOTES = {{ votes|tojson }}, CAN_VOTE = {{ 'true' if can_vote else 'false' }};
+function openDrawer(on) { document.body.classList.toggle("open", on); }
+function goPage(pg) {
+  const n = parseInt(String(pg).match(/\d+/) || "0", 10);
+  if (flip && n) { flip.flip(Math.min(n, total) - 1); openDrawer(false); }
+}
+async function vote(id, value, row) {
+  const fd = new FormData(); fd.append("story", id); fd.append("value", value);
+  const r = await fetch("/read/{{ e.date }}/vote", { method: "POST", body: fd });
+  if (r.ok) {
+    VOTES[id] = value;
+    row.querySelectorAll(".votes button").forEach((b) => b.classList.toggle("on", +b.dataset.v === value));
+  }
+}
+const list = document.getElementById("storyList");
+if (list) {
+  for (const s of STORIES) {
+    const li = document.createElement("li");
+    const pg = document.createElement("button"); pg.className = "pg"; pg.textContent = s.page ? "p. " + s.page : ""; pg.onclick = () => goPage(s.page);
+    const hd = document.createElement("div"); hd.className = "hd"; hd.textContent = s.headline; hd.onclick = () => goPage(s.page);
+    const src = document.createElement("div"); src.className = "src";
+    const a = document.createElement("a"); a.href = s.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = s.source || "source";
+    src.append((s.category ? s.category + " \u00b7 " : ""), a);
+    li.append(pg, hd);
+    if (CAN_VOTE) {
+      const v = document.createElement("div"); v.className = "votes";
+      for (const [val, ch, lab] of [[1, "\u{1F44D}", "More like this"], [-1, "\u{1F44E}", "Less like this"]]) {
+        const b = document.createElement("button"); b.dataset.v = val; b.textContent = ch; b.title = lab; b.setAttribute("aria-label", lab);
+        if (VOTES[s.id] === val) b.classList.add("on");
+        b.onclick = () => vote(s.id, val, li);
+        v.appendChild(b);
+      }
+      li.appendChild(v);
+    }
+    li.appendChild(src);
+    list.appendChild(li);
+  }
+  document.getElementById("storiesBtn").onclick = () => openDrawer(true);
+  document.getElementById("closeDrawer").onclick = () => openDrawer(false);
+  document.getElementById("veil").onclick = () => openDrawer(false);
+}
+
+let t;
+addEventListener("resize", () => {
+  clearTimeout(t);
+  t = setTimeout(() => { if (flip && wantSingle() !== single) mount(flip.getCurrentPageIndex()); }, 200);
+});
+
+try {
+  pdf = await pdfjsLib.getDocument(PDF_URL).promise;
+  total = pdf.numPages;
+  const p1 = await pdf.getPage(1);
+  const v = p1.getViewport({ scale: 1 });
+  ratio = v.width / v.height;
+  const first = startPage();
+  mount(first);
+  await renderAll(first);
+} catch (err) {
+  console.error(err);
+  document.getElementById("err").style.display = "flex";
+  countEl.textContent = "";
+}
+</script>
+</body>
+</html>

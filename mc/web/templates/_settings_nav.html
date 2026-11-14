@@ -1,0 +1,5 @@
+{% set _items = [('general', 'Paper & place', '/admin/settings/general'), ('layout', 'Layout & puzzles', '/admin/settings/layout'),
+                 ('content', 'Content & filters', '/admin/settings/content'), ('schedule', 'Schedule & delivery', '/admin/settings/schedule'),
+                 ('ai', 'AI', '/admin/settings/ai'), ('categories', 'Categories', '/admin/categories'), ('sources', 'Sources', '/admin/sources'),
+                 ('yaml', 'config.yaml', '/admin/yaml')] %}
+<div class="steps">{% for k, t, href in _items %}<a href="{{ href }}" style="text-decoration:none"><span class="{{ 'on' if k == current else '' }}">{{ t }}</span></a>{% endfor %}</div>

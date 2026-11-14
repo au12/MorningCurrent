@@ -1,0 +1,186 @@
+# Default category wheel. Every story is tagged with one category. Keywords drive the automatic
+# classifier: a word ending in * matches any word that starts with it; phrases match as phrases.
+# family: science | health | tech | culture   (the science family should supply ~1/3 to 1/2 of a paper)
+# You can rename, add, disable or re-weight categories in Settings > Content.
+
+- name: Space
+  family: science
+  keywords: [nasa, esa, jaxa, isro, spacex, rocket*, launch pad, orbit*, satellite*, astronaut*, cosmonaut*, spacecraft,
+    space probe, rover, lander, telescope*, webb, hubble, jwst, galax*, nebula*, supernova*, black hole*, exoplanet*,
+    planet*, asteroid*, comet*, meteor*, lunar, mars, martian, jupiter, saturn, venus, neptune, uranus, pluto,
+    solar system, cosmic, cosmolog*, universe, dark matter, dark energy, astronom*, astrophysic*, space station,
+    eclipse, solar flare*, sunspot*, heliophysic*, star cluster, light-year*, moon landing, artemis]
+
+- name: Earth & Climate
+  family: science
+  keywords: [climate, global warming, emission*, carbon dioxide, co2, greenhouse gas*, glacier*, ice sheet*, permafrost,
+    sea level*, drought*, volcan*, earthquake*, geolog*, tectonic*, fossil fuel*, soil*, erosion, river*, lake*,
+    groundwater, aquifer*, atmospher*, ozone, rainforest*, deforestation, reforestation, wetland*, carbon capture,
+    landscape*, mineral*, cave*, rock formation*, sediment*, earth science]
+
+- name: Nature & Wildlife
+  family: science
+  keywords: [species, wildlife, animal*, bird*, mammal*, reptile*, amphibian*, frog*, toad*, insect*, bee, bees, butterfl*,
+    moth*, beetle*, spider*, bat, bats, wolf, wolves, bear, bears, fox, foxes, deer, owl*, eagle*, hawk*, songbird*,
+    plant*, tree, trees, forest*, fung*, mushroom*, flower*, pollinat*, conservation*, endangered, habitat*,
+    ecosystem*, biodiversity, zoo, zoos, rewilding, migrat*, nest*, predator*, prey, primate*, monkey*, ape, apes,
+    elephant*, lizard*, snake*, turtle*, tortoise*, ant, ants, botan*, seed bank*, national park*, naturalist*]
+
+- name: Oceans & Weather
+  family: science
+  keywords: [ocean*, sea, seas, marine, coral*, reef*, whale*, dolphin*, shark*, octopus*, squid*, jellyfish, deep sea,
+    seafloor, seabed, tide*, wave*, ocean current*, weather, forecast*, storm*, rainfall, snow*, hurricane*, tornado*,
+    cloud*, wind, winds, meteorolog*, noaa, el nino, el niño, la nina, la niña, monsoon*, atmospheric river*,
+    lightning, kelp, plankton, seabird*, coast*, iceberg*, sea ice, arctic, antarctic*]
+
+- name: Physics & Chemistry
+  family: science
+  keywords: [physics, physicist*, quantum, particle*, atom, atoms, atomic, electron*, photon*, proton*, neutron*, neutrino*,
+    laser*, optic*, magnet*, superconduct*, fusion, plasma, chemistry, chemist*, chemical*, molecule*, molecular,
+    catalyst*, isotope*, crystal*, gravity, gravitational, relativity, thermodynamic*, cern, collider*, entropy,
+    spectroscop*, periodic table, antimatter, higgs, wavelength*, resonance]
+
+- name: Materials
+  family: science
+  keywords: [material*, alloy*, metal*, steel, aluminum, aluminium, titanium, polymer*, plastic*, composite*, ceramic*,
+    glass, concrete, cement, graphene, nanotube*, nanomaterial*, coating*, fiber*, fibre*, textile*, metamaterial*,
+    semiconductor material*, recycl*, biodegradable, adhesive*, rubber, lithium, silicon, perovskite*]
+
+- name: Biology & the Brain
+  family: science
+  keywords: [biology, biologist*, cell, cells, cellular, gene, genes, genetic*, genom*, dna, rna, protein*, enzyme*,
+    bacteri*, microb*, microbiome*, evolution*, brain*, neuron*, neuroscien*, memory, memories, sleep, cogniti*,
+    behavio*, organism*, embryo*, stem cell*, crispr, tissue*, nervous system, hormone*, photosynthesis, metabolism,
+    mitochondria, consciousness, perception, octopus intelligence]
+
+- name: Health & Medicine
+  family: health
+  keywords: [health, medical, medicine*, patient*, doctor*, physician*, hospital*, clinical, clinical trial*, therap*,
+    treatment*, drug*, vaccin*, disease*, cancer*, diabet*, heart disease, alzheimer*, dementia, surgery, surgeon*,
+    diagnos*, fda, nutrition*, diet*, exercise, mental health, infection*, antibiotic*, immun*, blood pressure,
+    stroke, nurse*, public health, wellbeing, well-being, obesity]
+
+- name: Human Origins & Archaeology
+  family: science
+  keywords: [archaeolog*, archeolog*, excavat*, ancient, prehistor*, fossil*, neanderthal*, denisovan*, hominin*,
+    homo sapiens, skeleton*, burial*, tomb*, artifact*, artefact*, ruins, roman, romans, egypt*, pharaoh*, maya,
+    mayan, stone age, bronze age, iron age, cave painting*, rock art, mumm*, pottery, inscription*, shipwreck*,
+    paleontolog*, dinosaur*, pyramid*, viking*, medieval, millennia]
+
+- name: History & Everyday Things
+  family: culture
+  keywords: [history, historic*, historian*, century, centuries, victorian, origin of, museum*, archive*, letters,
+    diary, diaries, antique*, vintage, heritage, tradition*, household*, everyday, object*, anniversary, invented,
+    founding, old photograph*, time capsule*, lighthouse*, postcard*]
+
+- name: Engineering & Energy
+  family: tech
+  keywords: [engineer*, energy, power plant*, power grid, grid, solar, wind turbine*, wind farm*, nuclear, reactor*,
+    battery, batteries, hydrogen, geothermal, hydropower, hydroelectric, dam, dams, bridge*, tunnel*,
+    infrastructure, turbine*, electric*, electricity, transmission line*, efficiency, heat pump*, construction,
+    megaproject*, fusion power, power station*, desalination, water supply, pumped storage]
+
+- name: Cars & Motorsport
+  family: tech
+  keywords: [car, cars, automotive, automaker*, vehicle*, electric vehicle*, ev, evs, engine*, horsepower, torque,
+    sedan*, coupe*, suv, suvs, pickup truck*, racing, race car*, formula 1, formula one, f1, nascar, le mans, rally,
+    motorsport*, porsche, ferrari, bmw, audi, volkswagen, toyota, honda, ford, chevrolet, corvette, mustang, tesla,
+    hypercar*, supercar*, classic car*, hot rod*, drivetrain*, transmission, motorcycle*, garage]
+
+- name: Transport & Aviation
+  family: tech
+  keywords: [aviation, aircraft, airplane*, aeroplane*, plane, planes, airline*, airport*, flight*, pilot*, jet, jets,
+    helicopter*, drone*, train, trains, rail*, railway*, high-speed rail, subway*, metro, transit, bus, buses, ship,
+    ships, ferr*, boat*, port, ports, shipping, bicycle*, bike*, e-bike*, scooter*, airship*, evtol, glider*,
+    seaplane*, canal*, cargo]
+
+- name: Robotics
+  family: tech
+  keywords: [robot*, humanoid*, automation, autonomous, android*, exoskeleton*, actuator*, gripper*, manipulator*,
+    boston dynamics, soft robot*, bionic, prosthe*, cobot*, robotic arm*, rover autonomy, mechatronic*]
+
+- name: Computing & Codes
+  family: tech
+  keywords: [computer*, computing, software, algorithm*, code, coding, programming, programmer*, open source,
+    open-source, linux, chip, chips, semiconductor*, processor*, cpu, gpu, quantum computer*, quantum computing,
+    encryption, cryptograph*, cipher*, internet, network*, database*, artificial intelligence, machine learning,
+    neural network*, supercomputer*, retro computing, game boy, compiler*, unix, bug, bugs, keyboard*, emulator*]
+
+- name: Home Tech & Self-Hosting
+  family: tech
+  keywords: [smart home, home assistant, home automation, self-hosted, self-hosting, selfhosted, homelab, nas,
+    raspberry pi, router*, wi-fi, wifi, matter protocol, zigbee, z-wave, thermostat*, smart speaker*, gadget*,
+    privacy, docker, plex, jellyfin, backup*, smart plug*, home network*, e-reader*, headphone*, appliance*]
+
+- name: Makers & DIY
+  family: tech
+  keywords: [maker*, diy, 3d print*, 3d-print*, printables, cnc, laser cutter*, woodworking, woodwork*, arduino, esp32,
+    microcontroller*, solder*, hack, hacks, hacker*, hackaday, homebrew, workshop*, tool, tools, craft*, repair*,
+    right to repair, restor*, kit, kits, build log*, prototype*, lathe*, welding, weld*, makerspace*]
+
+- name: Photography & Imaging
+  family: tech
+  keywords: [photo, photos, photograph*, camera*, lens, lenses, image sensor*, imaging, microscop*, film camera*,
+    darkroom, exposure*, astrophotograph*, timelapse, time-lapse, macro, photo contest*, mirrorless, dslr, leica,
+    nikon, canon, fujifilm, hasselblad, photojournal*, cinematograph*, infrared photo*, x-ray image*]
+
+- name: Art & Design
+  family: culture
+  keywords: [art, arts, artist*, artwork*, painting*, painter*, sculpture*, sculptor*, gallery, galleries, exhibition*,
+    design, designer*, illustrat*, drawing*, mural*, typograph*, typeface*, font*, ceramics, masterpiece*,
+    conservator*, curator*, comic*, animation, animator*, poster*, printmak*, calligraph*, quilt*]
+
+- name: Architecture
+  family: culture
+  keywords: [architecture, architect*, building*, skyscraper*, tower*, home design, interior*, urban, city planning,
+    cathedral*, temple*, mass timber, timber building*, renovation*, preservation, housing, house, houses, facade*,
+    landmark building*, brutalis*, castle*, stadium*, library building*]
+
+- name: Food & Farming
+  family: culture
+  keywords: [food, foods, cooking, cook, chef*, recipe*, cuisine*, restaurant*, farm, farms, farmer*, farming,
+    agricultur*, crop, crops, harvest*, apple*, coffee, tea, chocolate, cocoa, bread, cheese*, wine*, beer*,
+    brew*, ferment*, garden*, orchard*, livestock, cattle, fisher*, aquaculture, vegetable*, fruit*, grain*, wheat,
+    rice, honey, spice*, baking, bakery, kitchen*, pasta, pizza]
+
+- name: Language & Words
+  family: culture
+  keywords: [language*, word, words, dictionar*, linguist*, grammar, dialect*, alphabet*, writing system*, script*,
+    translat*, etymolog*, spelling, accent*, sign language, literacy, book, books, library, libraries, novel*,
+    author*, poet*, poem*, manuscript*, publishing, bookshop*, bookstore*, reading]
+
+- name: Music & Sound
+  family: culture
+  keywords: [music*, musician*, song*, album*, band, bands, orchestra*, symphon*, concert*, guitar*, piano*, violin*,
+    drum*, synthesizer*, synth*, audio, sound*, acoustic*, hearing, loudspeaker*, speaker*, vinyl, record player*,
+    composer*, opera*, jazz, choir*, melod*, rhythm*, instrument*, pipe organ*]
+
+- name: Sport & Games
+  family: culture
+  keywords: [sport, sports, athlete*, olympic*, marathon*, football, soccer, baseball, basketball, tennis, golf,
+    cycling, climbing, climber*, swimming, swimmer*, chess, board game*, video game*, game, games, esports,
+    world record*, skateboard*, surfing, surfer*, running, runner*, hiking, hiker*, ski, skiing]
+
+- name: Math & Puzzles
+  family: culture
+  keywords: [math, maths, mathematic*, theorem*, proof*, prime*, equation*, geometr*, topolog*, number theory,
+    statistic*, probabilit*, puzzle*, conjecture*, infinit*, pi, sudoku, crossword*, origami, tiling*, fractal*,
+    paradox*, logic, knot theory, rubik*]
+
+- name: Places & Maps
+  family: culture
+  keywords: [map, maps, mapping, cartograph*, geograph*, travel*, island*, village*, town, towns, city, cities,
+    country, countries, mountain*, desert*, valley*, canyon*, road trip*, landmark*, explorer*, expedition*,
+    border*, coastline*, trail*, atlas, place name*]
+
+- name: People & Odd Jobs
+  family: culture
+  keywords: [profile, career*, job, jobs, worker*, craftsman, craftsmen, artisan*, volunteer*, teacher*, student*,
+    kid, kids, family, families, grandmother*, grandfather*, centenarian*, community, communities, hobby*,
+    hobbyist*, unusual job*, keeper*, apprentice*, retiree*, neighbor*, neighbour*, collector*, record holder*]
+
+- name: Clever Businesses & Inventions
+  family: tech
+  keywords: [invention*, inventor*, invent*, startup*, start-up*, company, companies, business*, entrepreneur*,
+    patent*, prototype*, product*, innovation*, crowdfund*, kickstarter, factory, factories, manufactur*,
+    small business*, shop, shops, founder*, cooperative*, upcycl*, reuse*]

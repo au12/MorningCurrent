@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Edition {{ d }}{% endblock %}
+{% block body %}
+<section class="card">
+  <div class="row" style="align-items:center">
+    <div><div class="big">{{ d }}</div><p class="hint">{{ meta.title }}{% if meta.lead %} &middot; {{ meta.lead }}{% endif %}
+      {% if gen.generator %} &middot; written by: {{ {'auto': 'automatic (no AI)', 'ai': 'AI + automatic', 'manual': 'hand / Claude Code'}.get(gen.generator, gen.generator) }}{% endif %}
+      {% if gen.ai %} &middot; AI cost ${{ '%.2f'|format(gen.ai.spent_usd) }}{% endif %}</p></div>
+    <div class="actions" style="flex:none;margin:0">
+      {% if has_reading %}<a class="btn" href="/read/{{ d }}" target="_blank">Read</a>
+        <a class="btn ghost" href="/admin/editions/{{ d }}/reading.pdf" target="_blank">Reading PDF</a>{% endif %}
+      {% if has_booklet %}<a class="btn ghost" href="/admin/editions/{{ d }}/booklet.pdf" target="_blank">Print booklet</a>
+        <form method="post" action="/admin/editions/{{ d }}/print"><button class="ghost">Print now</button></form>{% endif %}
+      <form method="post" action="/admin/build"><input type="hidden" name="date" value="{{ d }}"><button class="ghost" onclick="return confirm('Make this edition again from tonight\'s candidates? It replaces the current content.')">Rebuild</button></form>
+      {% if has_booklet %}<form method="post" action="/admin/editions/{{ d }}/delete" onsubmit="return confirm('Delete the PDFs for {{ d }}?')"><button class="danger">Delete PDFs</button></form>{% endif %}
+    </div>
+  </div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h2>Quality check</h2>
+    {% if qa %}
+      {% for e in qa.errors or [] %}<p class="bad">&#10007; {{ e }}</p>{% endfor %}
+      {% for e in qa.cosmetic or [] %}<p>&#9888; {{ e }}</p>{% endfor %}
+      {% for e in qa.warnings or [] %}<p class="muted">&middot; {{ e }}</p>{% endfor %}
+      {% if not qa.errors and not qa.cosmetic %}<p>&#10003; Every column fits and fills; {{ qa.qr }}/{{ qa.qr_expected }} QR codes decode.</p>{% endif %}
+    {% else %}<p class="muted">No QA report (this edition was uploaded, not built here).</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Stories</h2>
+    {% if stories %}<table><tbody>{% for s in stories %}
+      <tr><td class="mono">p. {{ s.page }}</td><td><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.headline }}</a><br><span class="muted">{{ s.category }}{% if s.source %} &middot; {{ s.source }}{% endif %}</span></td></tr>
+    {% endfor %}</tbody></table>{% else %}<p class="muted">No content file.</p>{% endif %}
+  </section>
+</div>
+
+{% if rows %}
+<section class="card thumbs">
+  <h2>Contact sheets</h2>
+  {% for r in rows %}<a href="/admin/editions/{{ d }}/{{ r }}" target="_blank"><img src="/admin/editions/{{ d }}/{{ r }}" alt="pages"></a>{% endfor %}
+</section>
+{% endif %}
+
+{% if log %}
+<section class="card">
+  <h2>Build log</h2>
+  <pre>{{ log }}</pre>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+{% with current = tab %}{% include "_settings_nav.html" %}{% endwith %}
+{% if problems %}<div class="flash bad">{% for p in problems %}{{ p }}<br>{% endfor %}</div>{% endif %}
+<form method="post" action="/admin/settings/{{ tab }}" class="card">
+  <h2>{{ title }}</h2>
+  <div class="grid">
+  {% for f in fields %}
+    {% set w = f.widget %}
+    <div style="{{ 'grid-column:1/-1' if w in ('textarea', 'multi', 'lines', 'quotes', 'weekdays') else '' }}">
+    {% if w == 'checkbox' %}
+      <label class="check"><input type="checkbox" name="{{ f.path }}" {% if f.value %}checked{% endif %}> {{ f.label }}</label>
+    {% else %}
+      <label for="{{ f.path }}">{{ f.label }}</label>
+      {% if w == 'select' %}
+        <select id="{{ f.path }}" name="{{ f.path }}">
+          {% for c in f.choices %}{% set v = c[0] if c is not string else c %}{% set l = c[1] if c is not string else (c or '(default)') %}
+            <option value="{{ v }}" {% if v == f.value|string or v == f.value %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      {% elif w == 'multi' %}
+        <div class="checks">{% for c in f.choices %}<label class="check"><input type="checkbox" name="{{ f.path }}" value="{{ c[0] }}" {% if c[0] in f.value %}checked{% endif %}> {{ c[1] }}</label>{% endfor %}</div>
+      {% elif w == 'weekdays' %}
+        <div class="row" style="flex-wrap:wrap">{% for i in range(7) %}<div style="min-width:110px"><span class="hint">{{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i] }}</span>
+          <select name="{{ f.path }}.{{ i }}">{% for c in f.choices %}<option {% if f.value[i] == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>{% endfor %}</div>
+      {% elif w == 'pair' %}
+        <div class="row"><input type="number" name="{{ f.path }}.0" value="{{ f.value[0] }}"><input type="number" name="{{ f.path }}.1" value="{{ f.value[1] }}"></div>
+      {% elif w in ('textarea', 'lines', 'quotes') %}
+        <textarea id="{{ f.path }}" name="{{ f.path }}" rows="{{ f.rows or (8 if w == 'lines' else 4) }}" {% if f.path == 'ai.house_style' %}placeholder="{{ house_style_default }}"{% endif %}>{{ f.value }}</textarea>
+      {% else %}
+        <input id="{{ f.path }}" name="{{ f.path }}" type="{{ w if w in ('number', 'time', 'date') else 'text' }}" value="{{ '' if f.value is none else f.value }}" {% if f.step %}step="{{ f.step }}"{% elif w == 'number' %}step="any"{% endif %}>
+      {% endif %}
+    {% endif %}
+    {% if f.help %}<p class="hint">{{ f.help }}</p>{% endif %}
+    {% if f.path == 'printer.printer' %}<button type="button" class="ghost small" style="margin-top:6px" onclick="findQueues()">Find printers</button><datalist id="queues"></datalist>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  {% if secret_rows %}
+  <h3>Keys and passwords</h3>
+  <p class="hint">Stored in <span class="mono">secrets.json</span> in the data folder, never in config.yaml. Environment variables take precedence.</p>
+  <div class="grid">
+  {% for k, label, src in secret_rows %}
+    <div><label for="secret.{{ k }}">{{ label }}</label>
+      <input id="secret.{{ k }}" type="password" name="secret.{{ k }}" placeholder="{{ 'set in the environment' if src == 'env' else ('saved; type to replace' if src == 'file' else 'not set') }}" autocomplete="off">
+      {% if src == 'file' %}<label class="check" style="font-weight:500"><input type="checkbox" name="clear.{{ k }}"> Remove the saved value</label>{% endif %}</div>
+  {% endfor %}
+  </div>
+  {% endif %}
+  <div class="actions">
+    <button>Save</button>
+    {% if tab == 'ai' %}<button type="button" class="ghost" onclick="testAI()">Test the connection</button><span class="hint" id="aitest"></span>{% endif %}
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const pr = document.getElementById('printer.printer'); if (pr) pr.setAttribute('list', 'queues');
+async function findQueues(){
+  const fd = new FormData(); fd.append('cups_server', (document.getElementById('printer.cups_server')||{}).value || '');
+  const r = await fetch('/printer/test', {method:'POST', body:fd}); const j = await r.json();
+  if(!j.ok){ alert('Could not reach CUPS: ' + (j.error || 'unknown error')); return; }
+  const dl = document.getElementById('queues'); dl.innerHTML = '';
+  j.queues.forEach(q => { const o = document.createElement('option'); o.value = q; dl.appendChild(o); });
+  if (j.queues.length === 1) pr.value = j.queues[0];
+  alert(j.queues.length ? 'Found: ' + j.queues.join(', ') : 'Connected, but no shared printers were found.');
+}
+async function testAI(){
+  const el = document.getElementById('aitest'); el.textContent = 'Asking...';
+  const r = await fetch('/admin/ai/test', {method:'POST'}); const j = await r.json();
+  el.textContent = (j.ok ? '✓ ' : '✗ ') + j.message;
+}
+</script>
+{% endblock %}

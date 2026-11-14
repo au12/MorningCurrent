@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Press Room{% endblock %} · {{ cfg.paper.title }}</title>
+<link rel="icon" type="image/png" href="/static/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<style>
+@font-face{font-family:"Playfair";src:url(/fonts/playfair-display-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Playfair";src:url(/fonts/playfair-display-latin-900-normal.woff2) format("woff2");font-weight:900}
+@font-face{font-family:"SSerif";src:url(/fonts/source-serif-4-latin-400-normal.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"SSerif";src:url(/fonts/source-serif-4-latin-400-italic.woff2) format("woff2");font-weight:400;font-style:italic}
+@font-face{font-family:"SSerif";src:url(/fonts/source-serif-4-latin-600-normal.woff2) format("woff2");font-weight:600}
+@font-face{font-family:"Franklin";src:url(/fonts/libre-franklin-latin-500-normal.woff2) format("woff2");font-weight:500}
+@font-face{font-family:"Franklin";src:url(/fonts/libre-franklin-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Franklin";src:url(/fonts/libre-franklin-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:"Fraktur";src:url(/fonts/unifrakturmaguntia-latin-400-normal.woff2) format("woff2")}
+:root{
+  --paper:#f6f1e7; --card:#fffdf8; --ink:#1b1916; --muted:#6b645a; --rule:#d9d0bf;
+  --accent:#9b2c1f; --ok:#2f6b3a; --warn:#9b2c1f; --chip:#efe7d6; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{--paper:#16140f; --card:#1f1c16; --ink:#ede6d8; --muted:#a39a8b; --rule:#3a352b;
+        --accent:#e07a5f; --ok:#7fbf86; --warn:#e07a5f; --chip:#2a261e;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "SSerif",Georgia,serif}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 64px}
+header.mast{border-bottom:3px double var(--ink);padding:22px 0 8px;margin-bottom:20px;text-align:center}
+.mast h1{font:400 clamp(30px,6vw,50px)/1 "Fraktur",Georgia,serif;margin:0}
+.mast .sub{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  border-top:1px solid var(--ink);margin-top:12px;padding-top:6px;font:500 12.5px "Franklin",sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+nav.tabs a{text-decoration:none;padding:3px 9px;border-radius:99px}
+nav.tabs a.on{background:var(--ink);color:var(--paper)}
+.mast form{margin:0}
+.linkbtn{background:none;border:0;color:var(--muted);font:inherit;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;padding:0;text-decoration:underline}
+h2{font:700 22px/1.2 "Playfair",Georgia,serif;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+h3{font:700 17px/1.2 "Playfair",Georgia,serif;margin:16px 0 6px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:20px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.grid>*,.grid3>*,.row>*{min-width:0}
+input,select,textarea{min-width:0;max-width:100%}
+@media (max-width:820px){.grid,.grid3{grid-template-columns:1fr}}
+@media (max-width:520px){.row{flex-wrap:wrap}.row>*{flex-basis:100%}.card{padding:14px}}
+label{display:block;font:700 13.5px "Franklin",sans-serif;margin:14px 0 4px}
+.hint{font-size:13px;color:var(--muted);margin:3px 0 0}
+input[type=text],input[type=password],input[type=time],input[type=date],input[type=number],input[type=url],input[type=email],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;background:var(--paper);color:var(--ink);font:14px var(--mono)}
+textarea{font:13px/1.45 var(--mono);min-height:90px}
+.row{display:flex;gap:12px;align-items:end}
+.row>*{flex:1}
+.check{display:flex;gap:8px;align-items:flex-start;font:600 14px "Franklin",sans-serif;margin:12px 0 4px}
+.check input{margin-top:3px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 14px}
+.checks .check{margin:4px 0;font-weight:500}
+button,.btn{display:inline-block;background:var(--ink);color:var(--paper);border:0;border-radius:3px;padding:9px 16px;
+  font:700 13.5px "Franklin",sans-serif;cursor:pointer;text-decoration:none;letter-spacing:.02em}
+button.ghost,.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+button.danger{background:transparent;color:var(--warn);border:1px solid var(--rule)}
+button.small,.btn.small{padding:4px 9px;font-size:12px}
+button:hover,.btn:hover{opacity:.86}
+.actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.flash{padding:12px 16px;border-left:4px solid var(--ok);background:var(--card);margin-bottom:20px}
+.flash.bad{border-color:var(--warn)}
+.big{font:900 26px/1.1 "Playfair",Georgia,serif}
+.pill{display:inline-block;font:500 11.5px var(--mono);padding:2px 8px;border-radius:99px;background:var(--chip);color:var(--muted);white-space:nowrap}
+.pill.on{background:var(--ok);color:var(--card)} .pill.off{background:var(--warn);color:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font:700 11.5px "Franklin",sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--rule);padding:6px 8px}
+td{border-bottom:1px solid var(--rule);padding:7px 8px;vertical-align:top}
+td form{display:inline;margin:0}
+.mono{font-family:var(--mono);font-size:12.5px}
+.scroll{overflow-x:auto}
+.log ul{padding:0;margin:0} .log li{list-style:none;padding:6px 0;border-bottom:1px dotted var(--rule);font-size:14px;display:flex;gap:10px}
+.log .t{color:var(--muted);font:12px var(--mono);white-space:nowrap;padding-top:2px}
+.bad{color:var(--warn)}
+pre{background:var(--paper);border:1px solid var(--rule);padding:12px;overflow-x:auto;font:12px/1.5 var(--mono);border-radius:3px;max-height:460px}
+.muted{color:var(--muted)}
+.stat{font:900 30px/1 "Playfair",Georgia,serif}
+.stat small{display:block;font:500 12px "Franklin",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:5px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.steps span{font:700 12px "Franklin",sans-serif;padding:4px 10px;border-radius:99px;background:var(--chip);color:var(--muted)}
+.steps span.on{background:var(--ink);color:var(--paper)}
+.thumbs img{max-width:100%;border:1px solid var(--rule);margin-bottom:8px;background:#fff}
+details summary{cursor:pointer;font:700 14px "Franklin",sans-serif}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="wrap">
+<header class="mast">
+  <h1>{{ cfg.paper.title }}</h1>
+  <div class="sub">
+    {% if admin %}
+    <nav class="tabs">
+      {% set p = request.url.path %}
+      <a href="/admin" class="{{ 'on' if p == '/admin' else '' }}">Press room</a>
+      <a href="/admin/editions" class="{{ 'on' if p.startswith('/admin/editions') else '' }}">Editions</a>
+      <a href="/admin/desk" class="{{ 'on' if p.startswith('/admin/desk') else '' }}">Desk</a>
+      <a href="/admin/sources" class="{{ 'on' if p.startswith('/admin/sources') else '' }}">Sources</a>
+      <a href="/admin/settings/general" class="{{ 'on' if p.startswith('/admin/settings') or p.startswith('/admin/categories') or p.startswith('/admin/yaml') else '' }}">Settings</a>
+      <a href="/read" target="_blank">Reader &#8599;</a>
+    </nav>
+    <span>{{ now.strftime("%a %b %-d, ") }}{{ now.strftime("%H:%M") if cfg.format.clock == '24h' else now.strftime("%-I:%M %p") }}</span>
+    <form method="post" action="/logout"><button class="linkbtn">Sign out</button></form>
+    {% else %}
+    <span>{{ cfg.paper.tagline }}</span><span>Press room</span>
+    {% endif %}
+  </div>
+</header>
+{% if flash %}<div class="flash {{ '' if flash.ok else 'bad' }}">{{ flash.msg }}</div>{% endif %}
+{% block body %}{% endblock %}
+<p class="muted" style="text-align:center;font-size:12px;margin-top:40px">The Morning Current {{ version }} &middot;
+  <a href="https://github.com/au12/MorningCurrent">open source (MIT)</a></p>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,21 @@
+# docker compose up -d, then open http://<host>:8080 and sign in with ADMIN_PASSWORD.
+services:
+  morning-current:
+    image: ghcr.io/au12/morning-current:latest
+    # build: .            # or build it yourself from this repository
+    container_name: morning-current
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+      # - ./papers:/output          # optional: also copy each paper here (Settings > Schedule & delivery)
+    environment:
+      ADMIN_PASSWORD: change-me     # sign-in for the press room
+      TZ: America/New_York          # only affects log timestamps; the paper uses the time zone set in Settings
+      PUID: "1000"                  # owner of ./data
+      PGID: "1000"
+      # ANTHROPIC_API_KEY: sk-ant-...  # optional: Claude writing and research (or enter it in Settings > AI)
+      # PUSH_TOKEN: a-long-random-string  # optional: lets another machine push or trigger builds over the API
+      # CUPS_SERVER: 192.168.1.20:631     # optional: print server (or set it in Settings > Schedule & delivery)
+      # COOKIE_SECURE: "true"             # if you only reach the app over https

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}config.yaml{% endblock %}
+{% block body %}
+{% with current = "yaml" %}{% include "_settings_nav.html" %}{% endwith %}
+<form method="post" action="/admin/yaml" class="card">
+  <h2>config.yaml</h2>
+  <p class="hint">Every setting lives in <span class="mono">config.yaml</span> in the data folder. Only values that differ from the
+    defaults are written, so improved defaults (keywords, filters, source packs) reach you on upgrade. Edit here for anything the
+    forms don't cover; the whole file is checked before it is saved. Secrets are never stored here.</p>
+  <textarea name="text" rows="28" spellcheck="false" style="margin-top:12px">{{ text }}</textarea>
+  <div class="actions"><button>Check and save</button> <a class="btn ghost" href="/admin/config.yaml">Download with every default</a></div>
+</form>
+<section class="card">
+  <details><summary>Every setting with its current value</summary><pre style="max-height:640px">{{ full }}</pre></details>
+</section>
+{% endblock %}

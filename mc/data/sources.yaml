@@ -1,0 +1,209 @@
+# Starter source packs. Turn packs on in the setup wizard or Settings > Sources; every feed can be
+# edited, disabled or removed afterwards, and you can add your own feeds or import OPML.
+#
+# license decides how much of an article the paper may print without AI:
+#   public-domain   US federal works and similar: full text, may be trimmed and edited
+#   cc-by, cc-by-sa full text, may be trimmed (the source box says "condensed")
+#   cc-by-nd        full text or a cut-off excerpt, never reworded (headline kept as published)
+#   cc-by-nc*       as above, for non-commercial use only (a home paper is non-commercial)
+#   copyrighted     headline, the feed's own summary and a QR code only
+# images: true means the feed's images may be printed (public-domain sources only).
+# max_per_edition caps how many stories one paper takes from a feed (republishing guidelines ask
+# not to republish a source systematically).
+# Licenses were checked in Nov. 2026; check each source's terms before relying on them.
+
+- id: open-science
+  name: Open science (full text)
+  description: Public-domain and openly licensed science news that can be printed in full.
+  default: true
+  sources:
+    - name: NASA
+      url: https://www.nasa.gov/feed/
+      homepage: https://www.nasa.gov
+      category: Space
+      license: public-domain
+      images: true
+      attribution: "NASA (public domain)"
+      notes: Third-party images credited to ESA, other agencies or photographers are skipped automatically.
+    - name: NASA Science
+      url: https://science.nasa.gov/feed/
+      homepage: https://science.nasa.gov
+      category: Space
+      license: public-domain
+      images: true
+      attribution: "NASA Science (public domain)"
+    - name: NOAA
+      url: https://www.noaa.gov/rss.xml
+      homepage: https://www.noaa.gov
+      category: Oceans & Weather
+      license: public-domain
+      images: true
+      attribution: "NOAA (public domain)"
+    - name: National Science Foundation
+      url: https://www.nsf.gov/rss/rss_www_news.xml
+      homepage: https://www.nsf.gov
+      license: public-domain
+      attribution: "U.S. National Science Foundation (public domain)"
+    - name: NIST
+      url: https://www.nist.gov/news-events/news/rss.xml
+      homepage: https://www.nist.gov
+      category: Physics & Chemistry
+      license: public-domain
+      attribution: "Republished courtesy of NIST"
+    - name: USDA Agricultural Research Service
+      url: https://www.ars.usda.gov/news-events/news/rss/
+      homepage: https://www.ars.usda.gov
+      category: Food & Farming
+      license: public-domain
+      attribution: "USDA Agricultural Research Service (public domain)"
+    - name: U.S. Fish & Wildlife Service
+      url: https://www.fws.gov/rss.xml
+      homepage: https://www.fws.gov
+      category: Nature & Wildlife
+      license: public-domain
+      attribution: "U.S. Fish & Wildlife Service (public domain)"
+    - name: National Archives (Prologue blog)
+      url: https://prologue.blogs.archives.gov/feed/
+      homepage: https://prologue.blogs.archives.gov
+      category: History & Everyday Things
+      license: public-domain
+      attribution: "U.S. National Archives (public domain)"
+    - name: eLife digests
+      url: https://elifesciences.org/rss/digests.xml
+      homepage: https://elifesciences.org
+      category: Biology & the Brain
+      license: cc-by
+      attribution: "eLife digest, CC BY 4.0"
+      max_per_edition: 1
+
+- id: republish
+  name: Free to republish (CC BY-ND)
+  description: Nonprofit outlets that let anyone republish their articles unedited, with credit.
+  default: true
+  sources:
+    - name: The Conversation (Technology)
+      url: https://theconversation.com/us/technology/articles.atom
+      homepage: https://theconversation.com/us
+      category: Computing & Codes
+      license: cc-by-nd
+      attribution: "Republished from The Conversation under CC BY-ND 4.0"
+      max_per_edition: 1
+      notes: Guidelines ask republishers not to systematically republish all articles; keep the cap low.
+    - name: The Conversation (Environment)
+      url: https://theconversation.com/us/environment/articles.atom
+      homepage: https://theconversation.com/us
+      category: Earth & Climate
+      license: cc-by-nd
+      attribution: "Republished from The Conversation under CC BY-ND 4.0"
+      max_per_edition: 1
+    - name: The Conversation (Astronomy)
+      url: https://theconversation.com/us/topics/astronomy-1153/articles.atom
+      homepage: https://theconversation.com/us
+      category: Space
+      license: cc-by-nd
+      attribution: "Republished from The Conversation under CC BY-ND 4.0"
+      max_per_edition: 1
+    - name: The Conversation (Arts)
+      url: https://theconversation.com/us/arts/articles.atom
+      homepage: https://theconversation.com/us
+      category: Art & Design
+      license: cc-by-nd
+      attribution: "Republished from The Conversation under CC BY-ND 4.0"
+      max_per_edition: 1
+    - name: Knowable Magazine
+      url: https://knowablemagazine.org/rss
+      homepage: https://knowablemagazine.org
+      license: cc-by-nd
+      attribution: "Originally published in Knowable Magazine (CC BY-ND 4.0)"
+      max_per_edition: 1
+      notes: Headlines and text may not be edited; photos are not covered by the license.
+    - name: Mongabay
+      url: https://news.mongabay.com/feed/
+      homepage: https://news.mongabay.com
+      category: Nature & Wildlife
+      license: cc-by-nd
+      attribution: "Republished from Mongabay under CC BY-ND 4.0"
+      max_per_edition: 1
+
+- id: science-news
+  name: Science news (headlines and summaries)
+  description: Popular science outlets. Copyrighted, so the paper prints the headline, the feed summary and a QR code.
+  default: true
+  sources:
+    - name: ScienceDaily
+      url: https://www.sciencedaily.com/rss/top/science.xml
+      homepage: https://www.sciencedaily.com
+      license: copyrighted
+    - name: Phys.org
+      url: https://phys.org/rss-feed/
+      homepage: https://phys.org
+      license: copyrighted
+    - name: Quanta Magazine
+      url: https://www.quantamagazine.org/feed/
+      homepage: https://www.quantamagazine.org
+      license: copyrighted
+      trust: 1.3
+    - name: Smithsonian (Science & Nature)
+      url: https://www.smithsonianmag.com/rss/science-nature/
+      homepage: https://www.smithsonianmag.com
+      license: copyrighted
+    - name: Ars Technica (Science)
+      url: https://feeds.arstechnica.com/arstechnica/science
+      homepage: https://arstechnica.com
+      license: copyrighted
+
+- id: tech-makers
+  name: Engineering, makers and cars
+  description: Engineering, DIY, photography and car outlets (headlines and summaries).
+  default: false
+  sources:
+    - name: IEEE Spectrum
+      url: https://spectrum.ieee.org/feeds/feed.rss
+      homepage: https://spectrum.ieee.org
+      license: copyrighted
+      trust: 1.2
+    - name: Hackaday
+      url: https://hackaday.com/blog/feed/
+      homepage: https://hackaday.com
+      category: Makers & DIY
+      license: copyrighted
+    - name: New Atlas
+      url: https://newatlas.com/index.rss
+      homepage: https://newatlas.com
+      license: copyrighted
+    - name: PetaPixel
+      url: https://petapixel.com/feed/
+      homepage: https://petapixel.com
+      category: Photography & Imaging
+      license: copyrighted
+    - name: Hagerty
+      url: https://www.hagerty.com/media/feed/
+      homepage: https://www.hagerty.com/media
+      category: Cars & Motorsport
+      license: copyrighted
+
+- id: good-news
+  name: Good news and curiosities
+  description: Uplifting and oddball stories (headlines and summaries).
+  default: false
+  sources:
+    - name: Good News Network
+      url: https://www.goodnewsnetwork.org/feed/
+      homepage: https://www.goodnewsnetwork.org
+      license: copyrighted
+      trust: 0.8
+    - name: Reasons to be Cheerful
+      url: https://reasonstobecheerful.world/feed/
+      homepage: https://reasonstobecheerful.world
+      license: copyrighted
+      notes: Much of its content is Creative Commons; check an article's license before raising this source's tier.
+    - name: Atlas Obscura
+      url: https://www.atlasobscura.com/feeds/latest
+      homepage: https://www.atlasobscura.com
+      category: Places & Maps
+      license: copyrighted
+    - name: The Public Domain Review
+      url: https://publicdomainreview.org/rss.xml
+      homepage: https://publicdomainreview.org
+      category: History & Everyday Things
+      license: copyrighted

@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morning-current"
+dynamic = ["version", "dependencies"]
+description = "A printed morning newspaper, made every night from RSS feeds: stories, almanac and puzzles, with optional Claude writing."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+requires-python = ">=3.11"
+authors = [{ name = "au12" }]
+keywords = ["newspaper", "rss", "print", "crossword", "sudoku", "almanac", "self-hosted"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: POSIX :: Linux",
+  "Framework :: FastAPI",
+  "Topic :: Printing",
+  "Topic :: Games/Entertainment :: Puzzle Games",
+]
+
+[project.urls]
+Homepage = "https://github.com/au12/MorningCurrent"
+Issues = "https://github.com/au12/MorningCurrent/issues"
+
+[project.optional-dependencies]
+embeddings = ["fastembed>=0.3"]
+test = ["pytest>=8"]
+
+[project.scripts]
+morning-current = "mc.__main__:cli"
+
+[tool.setuptools.dynamic]
+version = { attr = "mc.__version__" }
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["mc*"]
+
+[tool.setuptools.package-data]
+mc = ["data/*", "data/fonts/*", "web/templates/*", "web/static/*", "web/static/vendor/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["slow: lays out and prints a whole paper with headless Chromium (about a minute)"]
+filterwarnings = ["ignore::DeprecationWarning"]

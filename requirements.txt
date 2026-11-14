@@ -1,0 +1,32 @@
+# The Morning Current (Python 3.11+)
+# layout, PDFs, QR codes
+playwright>=1.44,<2
+pypdf>=4.0,<8
+pypdfium2>=4.20,<6
+pillow>=10.0,<14
+qrcode>=7.4,<9
+zxing-cpp>=2.2,<4
+# almanac and puzzles
+ephem>=4.1,<5
+wordfreq>=3.0,<4
+english-words>=2.0,<3
+nltk>=3.8,<4
+# settings
+pyyaml>=6.0,<7
+pydantic>=2.5,<3
+# ingest
+httpx>=0.27,<1
+feedparser>=6.0,<7
+# sgmllib3k lets feedparser read slightly broken feeds
+sgmllib3k>=1.0
+trafilatura>=1.8,<3
+vaderSentiment>=3.3,<4
+# web app and scheduler
+fastapi>=0.110,<1
+uvicorn[standard]>=0.29
+jinja2>=3.1,<4
+python-multipart>=0.0.9
+itsdangerous>=2.1
+apscheduler>=3.10,<4
+# optional AI providers
+anthropic>=0.40,<3

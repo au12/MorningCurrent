@@ -1,0 +1,55 @@
+# An example config.yaml. Every key is optional; anything left out takes its default.
+paper:
+  title: The Hillside Herald
+  tagline: Good news, told in full
+  household: the Garcias of Maple Lane
+location:
+  name: Burlington, Vt.
+  lat: 44.4759
+  lon: -73.2121
+  elevation: 61
+  tz: America/New_York
+format:
+  profile: letter-booklet
+  pages: 16
+  clock: 12h
+  sections: [wonders, almanac, word, sudoku, xword, logic, back]
+puzzles:
+  sudoku_by_weekday: [easy, easy, easy+, easy-medium, easy-medium, medium, medium+]
+  logic: [kenken, nonogram, wordsearch]
+  custom_quotes:
+    - quote: Keep your face always toward the sunshine.
+      who: Walt Whitman
+editorial:
+  favorites: [Space, Nature & Wildlife, Food & Farming, Makers & DIY]
+  reader_profile: Two adults and a ten-year-old who loves space, birds and building things.
+  # the default blocklist applies; a "blocklist:" list here replaces it entirely
+sources:
+  feeds:
+    - name: NASA
+      url: https://www.nasa.gov/feed/
+      license: public-domain
+      category: Space
+      images: true
+    - name: My town's library blog
+      url: https://library.example.org/feed.xml
+      license: copyrighted
+      category: History & Everyday Things
+schedule:
+  build_time: '21:30'
+  print_enabled: true
+  weekday_time: '06:30'
+  weekend_time: '08:00'
+printer:
+  cups_server: 192.168.1.20:631
+  printer: Brother_HL_L2350DW
+delivery:
+  email:
+    enabled: true
+    smtp_host: smtp.example.org
+    sender: herald@example.org
+    to: [grandma@example.org]
+ai:
+  provider: none
+web:
+  public_reader: false
