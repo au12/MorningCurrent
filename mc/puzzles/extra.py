@@ -472,110 +472,196 @@ INSTR = {
 }
 
 
-def _cage_table(p, small=False, solution=False):
+# ------------------------------------------------------------------ rendering (Typst code; see mc/paper.typ)
+def _len(x):
+    return f'{x:.3f}in'
+
+
+def _cell(content='[]', stroke=None, fill=None):
+    args = []
+    if stroke:
+        args.append(f'stroke: {stroke}')
+    if fill:
+        args.append(f'fill: {fill}')
+    return f'table.cell({", ".join(args)}, {content})' if args else content
+
+
+def _grid(n_cols, n_rows, size, cells, stroke='0.6pt + rgb("#888")', size_rows=None):
+    rows = size_rows or size
+    return (f'table(columns: ({_len(size)},) * {n_cols}, rows: ({_len(rows)},) * {n_rows}, align: center + horizon, '
+            f'stroke: {stroke}, {", ".join(cells)})')
+
+
+def _num(v, size):
+    return f'sans({size * 26 * 0.95:.1f}pt, weight: 600, [{v}])' if v != '' else '[]'
+
+
+def _cage_table(p, small=False, solution=False, size=None):
+    from .. import rules as R
     n, cage = p['n'], p['cage']
+    size = size or R.SIZES['logic_cell'] * (0.8 if small else 1)
     label = {}
-    for i, cg in enumerate(p['cages']):
+    for cg in p['cages']:
         r, c = min(tuple(x) for x in cg['cells'])
-        label[(r, c)] = f'{cg["target"]}{cg["op"]}'
-    h = f'<table class="lgrid{" small" if small else ""}">'
+        op = {'x': '×', '*': '×', '/': '÷', '-': '−'}.get(cg['op'], cg['op'])
+        label[(r, c)] = f'{cg["target"]}{op}'
+    thick = '1.2pt' if small else '1.8pt'
+    cells = []
     for r in range(n):
-        h += '<tr>'
         for c in range(n):
-            b = []
+            sides = []
             for side, (dr, dc) in (('top', (-1, 0)), ('bottom', (1, 0)), ('left', (0, -1)), ('right', (0, 1))):
                 rr, cc = r + dr, c + dc
-                thick = not (0 <= rr < n and 0 <= cc < n) or cage[rr][cc] != cage[r][c]
-                b.append(f'border-{side}:{(("1.2pt" if small else "1.8pt") + " solid #111") if thick else ".4pt dotted #999"}')
-            lab = f'<span class="cage">{label[(r, c)]}</span>' if (r, c) in label and not solution else ''
-            val = p['solution'][r][c] if solution else ''
-            h += f'<td style="{";".join(b)}">{lab}{val}</td>'
-        h += '</tr>'
-    return h + '</table>'
+                edge = not (0 <= rr < n and 0 <= cc < n) or cage[rr][cc] != cage[r][c]
+                sides.append(f'{side}: {thick} + ink' if edge else f'{side}: (paint: rgb("#999"), thickness: 0.4pt, dash: "dotted")')
+            lab = ''
+            if (r, c) in label and not solution:
+                lab = f'place(top + left, dx: 1.5pt, dy: 1pt, sans({max(5.5, size * 14):.1f}pt, weight: 700, [{label[(r, c)]}]))'
+            val = _num(p['solution'][r][c], size) if solution else '[]'
+            content = f'[#{lab}#{val}]' if lab else val
+            cells.append(_cell(content, '(' + ', '.join(sides) + ')'))
+    return _grid(n, n, size, cells, stroke='none')
 
 
-def _fut_table(p, solution=False):
+def _fut_table(p, solution=False, size=None):
+    from .. import rules as R
     n = p['n']
-    sym = {'<': '&lt;', '>': '&gt;'}
-    vsym = {'<': '&and;', '>': '&or;'}
-    h = '<table class="lgrid fut">'
-    for r in range(n):
-        h += '<tr>'
+    size = size or R.SIZES['logic_cell']
+    gap = size * 0.42
+    sym = {'<': '<', '>': '>'}
+    vsym = {'<': '∧', '>': '∨'}
+    cols = ', '.join([_len(size) if k % 2 == 0 else _len(gap) for k in range(2 * n - 1)])
+    rows = cols
+    cells = []
+    for r in range(2 * n - 1):
+        for c in range(2 * n - 1):
+            if r % 2 == 0 and c % 2 == 0:
+                rr, cc = r // 2, c // 2
+                v = p['solution'][rr][cc] if solution else p['givens'].get(f'{rr},{cc}', '')
+                cells.append(_cell(_num(v, size), '0.8pt + ink'))
+            elif r % 2 == 0:
+                sgn = sym.get(p['signs'].get(f'{r // 2},{c // 2},h'), '')
+                cells.append(f'sans(9pt, weight: 700, [{sgn}])' if sgn else '[]')
+            elif c % 2 == 0:
+                sgn = vsym.get(p['signs'].get(f'{r // 2},{c // 2},v'), '')
+                cells.append(f'sans(9pt, weight: 700, [{sgn}])' if sgn else '[]')
+            else:
+                cells.append('[]')
+    return f'table(columns: ({cols}), rows: ({rows}), align: center + horizon, stroke: none, {", ".join(cells)})'
+
+
+def _ws_table(p, mask=False, size=None):
+    from .. import rules as R
+    size = size or R.SIZES['logic_cell'] * 0.62
+    cells = []
+    for row, mrow in zip(p['grid'], p['mask']):
+        for ch, m in zip(row, mrow):
+            cells.append(f'sans({size * 32:.1f}pt, weight: 600, [{ch if (m == "1" or not mask) else ""}])')
+    return _grid(p['size'], p['size'], size, cells, stroke='none')
+
+
+def _non_table(p, size=None):
+    from .. import rules as R
+    size = size or R.SIZES['logic_cell'] * 0.55
+    mx = max(len(cl) for cl in p['cols'])
+    n = p['size']
+    cells = []
+    for k in range(mx):
+        cells.append('[]')
+        for cl in p['cols']:
+            v = cl[k - (mx - len(cl))] if k >= mx - len(cl) else ''
+            cells.append(f'align(center + bottom, sans(6.4pt, weight: 600, [{v}]))')
+    for r, cl in enumerate(p['rows']):
+        cells.append(f'align(right + horizon, pad(right: 2pt, sans(6.4pt, weight: 600, [{" ".join(map(str, cl))}])))')
         for c in range(n):
-            v = p['solution'][r][c] if solution else p['givens'].get(f'{r},{c}', '')
-            h += f'<td class="c">{v}</td>'
-            if c + 1 < n:
-                h += f'<td class="s">{sym.get(p["signs"].get(f"{r},{c},h"), "")}</td>'
-        h += '</tr>'
-        if r + 1 < n:
-            h += '<tr>' + ''.join(f'<td class="s">{vsym.get(p["signs"].get(f"{r},{c},v"), "")}</td>' + ('<td class="s"></td>' if c + 1 < n else '')
-                                   for c in range(n)) + '</tr>'
-    return h + '</table>'
+            st = ['0.4pt + rgb("#999")']
+            sides = []
+            if c % 5 == 0:
+                sides.append('left: 1pt + ink')
+            if r % 5 == 0:
+                sides.append('top: 1pt + ink')
+            if c == n - 1:
+                sides.append('right: 1pt + ink')
+            if r == n - 1:
+                sides.append('bottom: 1pt + ink')
+            stroke = '(rest: 0.4pt + rgb("#999")' + (', ' + ', '.join(sides) if sides else '') + ')'
+            cells.append(_cell('[]', stroke))
+    return (f'table(columns: (auto,) + ({_len(size)},) * {n}, rows: (auto,) * {mx} + ({_len(size)},) * {n}, '
+            f'align: center + horizon, stroke: none, inset: 0pt, {", ".join(cells)})')
+
+
+def _non_solution(p, size=0.16):
+    cells = [_cell('[]', None, 'ink' if x == '1' else 'white') for row in p['solution'] for x in row]
+    return _grid(p['size'], p['size'], size, cells, stroke='0.3pt + rgb("#999")')
+
+
+def _kakuro_table(p, solution=False, size=None):
+    from .. import rules as R
+    size = size or R.SIZES['logic_cell']
+    n = p['size']
+    cells = []
+    for r in range(n):
+        for c in range(n):
+            if p['black'][r][c] == '1':
+                cl = p['clues'].get(f'{r},{c}', {})
+                inner = []
+                if cl:
+                    inner.append('place(top + left, line(start: (0%, 0%), end: (100%, 100%), stroke: 0.5pt + rgb("#777")))')
+                fs = max(5.5, size * 13)
+                if 'dn' in cl:
+                    inner.append(f'place(bottom + left, dx: 2pt, dy: -1pt, sans({fs:.1f}pt, weight: 700, text(fill: white, [{cl["dn"]}])))')
+                if 'ac' in cl:
+                    inner.append(f'place(top + right, dx: -2pt, dy: 1pt, sans({fs:.1f}pt, weight: 700, text(fill: white, [{cl["ac"]}])))')
+                content = '[' + ''.join('#' + x for x in inner) + ']'
+                cells.append(_cell(content, '0.6pt + rgb("#888")', 'ink'))
+            else:
+                v = p['solution'][f'{r},{c}'] if solution else p.get('givens', {}).get(f'{r},{c}', '')
+                cells.append(_cell(_num(v, size), '0.6pt + rgb("#888")'))
+    return _grid(n, n, size, cells, stroke='none')
 
 
 def render(name, p, small=False):
+    """A logic puzzle with its title and instructions, as Typst code."""
     base = name.replace('_mini', '')
     title = TITLES.get(name, name)
     instr = INSTR[base].format(n=p.get('n', 5))
-    head = f'<div class="ptitle">{p.get("title") or title}</div><p class="pinstr">{instr}</p>'
+    from ..ty import rich
+    head = f'ptitle({rich(p.get("title") or title)}, size: T.ptitle * 0.82pt), pinstr({rich(instr)})'
     if base == 'kenken':
         body = _cage_table(p, small)
     elif base == 'futoshiki':
         body = _fut_table(p)
     elif base == 'wordsearch':
-        body = ('<table class="lgrid ws">' + ''.join('<tr>' + ''.join(f'<td>{ch}</td>' for ch in row) + '</tr>' for row in p['grid'])
-                + '</table>' + '<div class="wslist">' + '<br>'.join(p['words']) + '</div>')
+        words = ', '.join(f'[{w}]' for w in p['words'])
+        body = (f'stack(spacing: 4pt, {_ws_table(p)}, columns(4, gutter: 6pt, sans(7.6pt, weight: 600, track: 0.06em, '
+                f'par(leading: lh(1.5), justify: false, first-line-indent: 0pt, ({words},).join(linebreak())))))')
     elif base == 'nonogram':
-        mx = max(len(cl) for cl in p['cols'])
-        h = '<table class="lgrid non">'
-        for k in range(mx):
-            h += '<tr><td class="h"></td>' + ''.join(
-                f'<td class="v">{cl[k - (mx - len(cl))] if k >= mx - len(cl) else ""}</td>' for cl in p['cols']) + '</tr>'
-        for r, cl in enumerate(p['rows']):
-            h += f'<tr><td class="h">{"&nbsp;".join(map(str, cl))}</td>' + ''.join('<td class="c"></td>' for _ in range(p['size'])) + '</tr>'
-        body = h + '</table>'
+        body = _non_table(p)
     elif base == 'kakuro':
         body = _kakuro_table(p)
     else:
-        body = ''
-    wide = ' wide' if base in ('wordsearch', 'nonogram') else ''
-    return f'<div class="lpz{wide}">{head}{body}</div>' if not small else f'<div style="display:flex;gap:12pt;align-items:flex-start"><div>{body}</div><div>{head}</div></div>'
-
-
-def _kakuro_table(p, solution=False):
-    n = p['size']
-    h = '<table class="lgrid">'
-    for r in range(n):
-        h += '<tr>'
-        for c in range(n):
-            if p['black'][r][c] == '1':
-                cl = p['clues'].get(f'{r},{c}', {})
-                inner = (f'<span class="dn">{cl["dn"]}</span>' if 'dn' in cl else '') + (f'<span class="ac">{cl["ac"]}</span>' if 'ac' in cl else '')
-                h += f'<td class="k{" diag" if cl else ""}">{inner}</td>'
-            else:
-                v = p['solution'][f'{r},{c}'] if solution else p.get('givens', {}).get(f'{r},{c}', '')
-                h += f'<td>{v}</td>'
-        h += '</tr>'
-    return h + '</table>'
+        body = '[]'
+    if small:
+        return f'grid(columns: (auto, 1fr), column-gutter: 12pt, {body}, stack({head}))'
+    return f'stack({head}, {body})'
 
 
 def answer(name, p):
+    """A logic puzzle's solution for the back page, as Typst code (or '' for unknown names)."""
     base = name.replace('_mini', '')
     t = TITLES.get(name, name)
+    s = 0.16
     if base == 'kenken':
-        body = _cage_table(p, solution=True)
+        body = _cage_table(p, solution=True, size=s)
     elif base == 'futoshiki':
-        n = p['n']
-        body = '<table class="lgrid">' + ''.join('<tr>' + ''.join(f'<td>{p["solution"][r][c]}</td>' for c in range(n)) + '</tr>'
-                                                 for r in range(n)) + '</table>'
+        cells = [f'sans(6.4pt, [{p["solution"][r][c]}])' for r in range(p['n']) for c in range(p['n'])]
+        body = _grid(p['n'], p['n'], s, cells)
     elif base == 'wordsearch':
-        body = '<table class="lgrid">' + ''.join('<tr>' + ''.join(f'<td>{ch if m == "1" else ""}</td>' for ch, m in zip(row, mrow)) + '</tr>'
-                                                 for row, mrow in zip(p['grid'], p['mask'])) + '</table>'
+        body = _ws_table(p, mask=True, size=0.13)
     elif base == 'nonogram':
-        body = '<table class="lgrid">' + ''.join('<tr>' + ''.join(f'<td style="background:{"#111" if x == "1" else "#fff"}"></td>' for x in row) + '</tr>'
-                                                 for row in p['solution']) + '</table>'
+        body = _non_solution(p)
     elif base == 'kakuro':
-        body = _kakuro_table(p, solution=True)
+        body = _kakuro_table(p, solution=True, size=s)
     else:
         return ''
-    return f'<h5 style="margin-top:5pt">{t}</h5>{body}'
+    return f'block(above: 5pt, ans-head([{t}])), {body}'

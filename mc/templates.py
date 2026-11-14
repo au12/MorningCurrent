@@ -1,12 +1,14 @@
-"""Page templates. Each returns the inner HTML of one page from edition data plus the current fit state.
+"""Page templates. Each returns the Typst code for one page's body from edition data plus the current fit state.
 
 Design rules built in (spec §3): ear-less masthead with a computed sky strip; head blocks hold only
 kicker, headline and deck; every story's source box comes at its end; two-story pages give each story
 its own column; briefs, fact boxes and charts close any gap; puzzles and answers are generated.
+Each story column region is a `region(...)` in mc/paper.typ; the fitter measures it by slot name.
 """
-from . import rules as R, almanac as A, puzzles as PZ
-from .components import (qr_inline, srcbox, story_src, moon_svg, kicker, headblock, shead, blocks, plain,
-                         also, factbox, chart, dom)
+from . import almanac as A, puzzles as PZ, rules as R
+from .components import (Region, also, blocks, chart, code_block, fact_items, factbox, headblock, kicker, moon, plain,
+                         qr_inline, shead, srcbox, story_src, dom)
+from .ty import array, q, rich
 
 
 def _live(bl):
@@ -28,30 +30,25 @@ def _split(bl, idx, nsent=0):
     return left, right
 
 
-def page(n, inner, section='', front=False):
-    side = 'recto' if n % 2 else 'verso'
-    rh = fo = ''
-    if not front:
-        l, r = (R.TITLE, None) if side == 'verso' else (None, R.TITLE)
-        l = l or '{date}'
-        r = r or '{date}'
-        rh = f'<div class="rhead"><span>{l}</span><span class="sec">{section}</span><span>{r}</span></div>'
-        fo = f'<div class="folio">{n}</div>'
-    return f'<section class="page {side}{" front" if front else ""}" data-n="{n}">{rh}<div class="inner">{inner}</div>{fo}</section>'
+def page(n, body, section='', front=False):
+    verso = n % 2 == 0
+    lh, rh = (R.TITLE, '{date}') if verso else ('{date}', R.TITLE)
+    return (f'#page-frame({n}, front: {"true" if front else "false"}, section: {rich(section)}, '
+            f'lhead: {rich(lh)}, rhead: {rich(rh)}, {body})\n')
 
 
-def cols(slot, html, one=False, space=0):
-    sp = f' data-space="{space}"' if space else ''
-    return f'<div class="cols{" one" if one else ""}" data-slot="{slot}"{sp}>{html}</div>'
+def region(slot, parts, n=2, space=0, height=None):
+    h = f', height: {height}' if height else ''
+    return f'region({q(slot)}, n: {n}, space: {space}{h}, {code_block(parts)})'
 
 
-def extras(ed, st):
-    """The story's own briefs plus any reserve briefs the fitter placed under it."""
+def extras(ed, rg, st):
+    """The story's own briefs plus any reserve briefs the fitter placed under it, and fitted graphics."""
     own = st.get('briefs', [])
     added = ed.fit['extra'].get(st['id'], [])
-    out = also(st.get('also', f'Also in {st["category"]}'), own + added)
+    out = also(rg, st.get('also', f'Also in {st["category"]}'), own + added)
     for k, spec in ed.fit['graphics'].get(st['id'], []):
-        out += factbox(*spec) if k == 'facts' else chart(spec)
+        out.append(factbox(rg, *spec) if k == 'facts' else chart(rg, spec))
     return out
 
 
@@ -59,189 +56,222 @@ def _space(ed, sid):
     return ed.fit['space'].get(sid, 0)
 
 
+def _rg(ed, slot):
+    return Region(slot, _space(ed, slot))
+
+
 # ------------------------------------------------------------------ front and continuation
 def front(ed):
     t0 = ed.sky_today
-    sep = '<span class="sep">&middot;</span>'
-    strip = ''
+    strip = 'none'
     if R.SKY_STRIP:
         rise = t0['mr'] if t0['mr'] != '&mdash;' else f'{t0["mr_next"]} {t0["mr_next_day"]}'
-        strip = (f'<div class="skystrip" data-shrink><span>Sunrise {t0["sr"]}</span>{sep}<span>Sunset {t0["ss"]}</span>'
-                 f'<span class="sep">&mdash;</span>{moon_svg(t0["lit"] / 100, t0["waning"])}'
-                 f'<span>{A.phase_name(t0["lit"], t0["waning"])}, {t0["lit"]}% lit</span>{sep}'
-                 f'<span>Moonrise {rise}</span>{sep}<span>Moonset {t0["ms"]}</span></div>')
-    index = ''
-    if R.INDEX_ON_FRONT:
-        cells = ''.join(f'<div><span class="pg">{pg}</span><span class="t">{t}</span>{h}</div>' for pg, t, h in ed.index())
-        index = f'<div class="inside">{cells}</div>' if cells else ''
+        strip = ' + '.join([rich(f'Sunrise {t0["sr"]}'), 'sep', rich(f'Sunset {t0["ss"]}'), '[ — ]',
+                            moon(t0['lit'] / 100, t0['waning']), '[ ]',
+                            rich(f'{A.phase_name(t0["lit"], t0["waning"])}, {t0["lit"]}% lit'), 'sep',
+                            rich(f'Moonrise {rise}'), 'sep', rich(f'Moonset {t0["ms"]}')])
+        strip = f'({strip})'
+    parts = [f'masthead({rich(R.TITLE)}, {rich(f"Vol. {R.VOLUME} &middot; No. {ed.number}")}, {rich(ed.pretty)}, '
+             f'{rich(R.TAGLINE)}, {strip})', headblock(ed.lead, 'h1')]
     lead = ed.lead
     a, _ = _split(ed.blocks_of(lead), ed.fit['jump'], ed.fit.get('jump_s', 0))
-    return (f'<div class="mast"><div class="title" data-shrink>{R.TITLE}</div><div class="dateline"><span>Vol. {R.VOLUME} &middot; No. {ed.number}</span>'
-            f'<span>{ed.pretty}</span><span>{R.TAGLINE}</span></div>{strip}</div>'
-            f'{headblock(lead, "h1")}'
-            + cols('front', blocks(a) + '<p class="cont">Continued on page 2 &rarr;</p>', space=_space(ed, 'front'))
-            + index)
+    rg = _rg(ed, 'front')
+    body = blocks(rg, a) + [f'cont-line({rg.args()}, [Continued on page 2 →])']
+    parts.append(region('front', body, space=rg.space))
+    if R.INDEX_ON_FRONT:
+        cells = ed.index()
+        if cells:
+            parts.append('index-cells(' + array(f'({rich(pg)}, {rich(t)}, {rich(h)})' for pg, t, h in cells) + ')')
+    return code_block(parts)
+
+
+def side_head(rg, s):
+    return f'side-head({rg.args()}, {rich(s["kicker"])}, {rich(s["headline"])})'
 
 
 def cont(ed):
     lead = ed.lead
     b = plain(_split(ed.blocks_of(lead), ed.fit['jump'], ed.fit.get('jump_s', 0))[1])
-    h = f'<div class="headblock">{kicker(lead["kicker"] + " &middot; Continued from page 1")}<h3>{lead["cont_head"]}</h3></div>'
-    body = blocks(b) + story_src(lead) + extras(ed, lead)
+    head = (f'block(below: 2pt, {{ {kicker(lead["kicker"] + " &middot; Continued from page 1")}; '
+            f'hed(T.h3, {rich(lead["cont_head"])}); v(4pt) }})')
+    rg = _rg(ed, 'cont')
+    body = blocks(rg, b) + [story_src(rg, lead)] + extras(ed, rg, lead)
     if ed.sidebar:
         s = ed.sidebar
-        body += (f'<div class="side"><div class="bhead"><div class="rule thick" style="margin:0 0 5pt"></div>{kicker(s["kicker"])}'
-                 f'<h3>{s["headline"]}</h3></div>{blocks(plain(_live(ed.blocks_of(s))))}{story_src(s)}{extras(ed, s)}</div>')
-    return h + cols('cont', body, space=_space(ed, 'cont'))
+        body += [side_head(rg, s)] + blocks(rg, plain(_live(ed.blocks_of(s)))) + [story_src(rg, s)] + extras(ed, rg, s)
+    return code_block([head, region('cont', body, space=rg.space)])
 
 
 # ------------------------------------------------------------------ story pages
 def feature(ed, st):
-    return headblock(st) + cols(st['id'], blocks(_live(ed.blocks_of(st)), first_dropcap=True) + story_src(st) + extras(ed, st),
-                                space=_space(ed, st['id']))
+    rg = _rg(ed, st['id'])
+    body = blocks(rg, _live(ed.blocks_of(st)), first_dropcap=True) + [story_src(rg, st)] + extras(ed, rg, st)
+    return code_block([headblock(st), region(st['id'], body, space=rg.space)])
 
 
 def split(ed, a, b):
-    col = lambda st, first: cols(st['id'], shead(st) + blocks(_live(ed.blocks_of(st)) if first else plain(_live(ed.blocks_of(st))),
-                                                              first_dropcap=first)
-                                 + story_src(st) + extras(ed, st), one=True, space=_space(ed, st['id']))
-    return f'<div class="split">{col(a, True)}{col(b, False)}</div>'
+    def col(st, first):
+        rg = _rg(ed, st['id'])
+        bl = _live(ed.blocks_of(st))
+        body = ([f'blk({rg.args()}, {shead(st)})'] + blocks(rg, bl if first else plain(bl), first_dropcap=first)
+                + [story_src(rg, st)] + extras(ed, rg, st))
+        return region(st['id'], body, n=1, space=rg.space, height='100%')
+    return code_block([f'split-pair({col(a, True)}, {col(b, False)})'])
 
 
 def spread_left(ed, st):
     bl = _split(ed.blocks_of(st), ed.fit['turn'], ed.fit.get('turn_s', 0))[0]
-    return '<div class="spreadrule"></div>' + headblock(st, 'h1') + cols(st['id'] + '_l', blocks(bl, first_dropcap=True),
-                                                                       space=_space(ed, st['id'] + '_l'))
+    slot = st['id'] + '_l'
+    rg = _rg(ed, slot)
+    return code_block(['spread-rule()', headblock(st, 'h1'), region(slot, blocks(rg, bl, first_dropcap=True), space=rg.space)])
 
 
 def spread_right(ed, st):
     bl = plain(_split(ed.blocks_of(st), ed.fit['turn'], ed.fit.get('turn_s', 0))[1])
-    h = '<div class="spreadrule"></div>' + cols(st['id'] + '_r', blocks(bl) + story_src(st) + extras(ed, st),
-                                                 space=_space(ed, st['id'] + '_r'))
+    slot = st['id'] + '_r'
+    rg = _rg(ed, slot)
+    parts = ['spread-rule()', region(slot, blocks(rg, bl) + [story_src(rg, st)] + extras(ed, rg, st), space=rg.space)]
+    x = Region('_fixed')
     if st.get('facts'):
-        fh = ''.join(f'<div><b>{a}</b>{b}</div>' for a, b in st['facts'][1])
-        h += (f'<div class="box shade" style="flex:0 0 auto;margin-top:7pt;padding:5pt 7pt"><div class="boxhead" style="margin-bottom:3pt">'
-              f'{st["facts"][0]}</div><div class="facts">{fh}</div></div>')
+        parts.append(f'block(above: 7pt, ibox(shade: true, inset: (x: 7pt, y: 5pt), {{ boxhead({rich(st["facts"][0])}, below: 3pt); '
+                     f'factgrid({fact_items(st["facts"][1])}, 4) }}))')
     if st.get('timeline'):
-        h += f'<div style="flex:0 0 auto">{chart(dict(st["timeline"], kind="timeline"), wide=True)}</div>'
-    return h
+        parts.append(chart(x, dict(st['timeline'], kind='timeline'), wide=True))
+    return code_block(parts)
 
 
-def _odd_items(items):
-    return ''.join(f'<div class="odd"><div class="qhead"><h5>{w["head"]}</h5>{qr_inline(w["src"])}</div><p>{w["text"]}</p>'
-                   f'{"<p class=srcl>" + w["credit"] + "</p>" if w.get("credit") else ""}</div>' for w in items)
+def _odd_items(rg, items):
+    out = []
+    for w in items:
+        cr = rich(w['credit']) if w.get('credit') else 'none'
+        out.append(f'odd({rg.args()}, space: {rg.space}, {rich(w["head"])}, {rich(w["text"])}, {qr_inline(w["src"])}, credit: {cr})')
+    return out
 
 
 def wonders(ed):
-    return (f'<div class="headblock">{kicker("Odds &amp; Ends")}<h2>Small Wonders</h2><div class="deck">{ed.wonders_deck}</div></div>'
-            + cols('wonders', _odd_items(ed.printed_wonders()) + also('More Small Wonders', ed.fit['extra'].get('wonders', [])),
-                   space=_space(ed, 'wonders')))
+    rg = _rg(ed, 'wonders')
+    head = f'headblock([Odds & Ends], "h2", [Small Wonders], {rich(ed.wonders_deck) if ed.wonders_deck else "none"})'
+    body = _odd_items(rg, ed.printed_wonders()) + also(rg, 'More Small Wonders', ed.fit['extra'].get('wonders', []))
+    return code_block([head, region('wonders', body, space=rg.space)])
 
 
 def roundup(ed, r):
     """A page of short items (headline, summary, QR) under one theme, for sources that allow only excerpts."""
-    deck = f'<div class="deck">{r["deck"]}</div>' if r.get('deck') else ''
-    return (f'<div class="headblock">{kicker(r.get("kicker", "In Brief"))}<h2>{r["headline"]}</h2>{deck}</div>'
-            + cols(r['id'], _odd_items(ed.items_of(r)) + also('More to read', ed.fit['extra'].get(r['id'], [])),
-                   space=_space(ed, r['id'])))
+    rg = _rg(ed, r['id'])
+    head = f'headblock({rich(r.get("kicker", "In Brief"))}, "h2", {rich(r["headline"])}, {rich(r["deck"]) if r.get("deck") else "none"})'
+    body = _odd_items(rg, ed.items_of(r)) + also(rg, 'More to read', ed.fit['extra'].get(r['id'], []))
+    return code_block([head, region(r['id'], body, space=rg.space)])
 
 
 # ------------------------------------------------------------------ almanac
+def _phase_icon(name):
+    k, w = (0, False) if name.startswith('New') else (.5, False) if name.startswith('First') else (.5, True) if name.startswith('Last') else (1, False)
+    return moon(k, w, 11)
+
+
 def almanac(ed):
     a, b = ed.sky_today, ed.sky_tomorrow
-    lit = lambda d: f'<span class="phi">{moon_svg(d["lit"] / 100, d["waning"], 10)}</span>{d["lit"]}%'
-
-    def picon(name):
-        k, w = (0, False) if name.startswith('New') else (.5, False) if name.startswith('First') else (.5, True) if name.startswith('Last') else (1, False)
-        return f'<span class="phi">{moon_svg(k, w, 11)}</span>'
-    rows = A.sky_rows(ed.date, ed.alm.get('extra', []), ed.fit['cal_rows'])
-    cal = ''.join(f'<tr><td class="d">{"&#9733; " if r.get("star") else ""}{r["label"]}</td><td>{r["text"]}</td></tr>' for r in rows)
-    ph = ''.join(f'<tr><td>{picon(n)}{n}</td><td class="v">{v}</td></tr>' for n, v, _, _ in A.phases(ed.date))
-    tbl = (f'<tr><td></td><td class="v">{a["day"]}</td><td class="v">{b["day"]}</td></tr>'
-           + ''.join(f'<tr><td>{lab}</td><td class="v">{a[k]}</td><td class="v">{b[k]}</td></tr>'
-                     for lab, k in (('Sunrise', 'sr'), ('Sunset', 'ss'), ('Daylight', 'dl'), ('Moonrise', 'mr'), ('Moonset', 'ms')))
-           + f'<tr><td>Moon lit ({A.clock(21, 0)})</td><td class="v">{lit(a)}</td><td class="v">{lit(b)}</td></tr>')
-    word = ed.alm.get('word')
-    wd = (f'<div class="box shade" style="margin-top:8pt"><div class="boxhead">Word of the Day</div><p class="noind">'
-          f'<b style="font-family:Playfair;font-size:12pt">{word[0]}</b> <i>({word[1]}), {word[2]}.</i> {word[3]}</p></div>') if word else ''
-    look = ''
-    lk = ed.alm.get('lookup') or A.lookup(ed.date)
-    if ed.fit['lookup'] and lk:
-        t, txt = lk
-        look = f'<div class="box fill"><div class="boxhead">{t}</div><p class="noind" style="font-size:8.4pt;line-height:1.3">{txt}</p></div>'
-    src = ed.alm.get('src')
+    lit = lambda d: f'({moon(d["lit"] / 100, d["waning"], 10)} + [ ] + {rich(str(d["lit"]) + "%")})'
+    rows = [('[]', rich(a['day']), rich(b['day']))]
+    rows += [(rich(lab), rich(a[k]), rich(b[k])) for lab, k in (('Sunrise', 'sr'), ('Sunset', 'ss'), ('Daylight', 'dl'),
+                                                               ('Moonrise', 'mr'), ('Moonset', 'ms'))]
+    rows += [(rich(f'Moon lit ({A.clock(21, 0)})'), lit(a), lit(b))]
+    sun = 'suntable(' + array('(' + ', '.join(r) + ')' for r in rows) + ')'
+    ph = 'phasetable(' + array(f'({_phase_icon(n)} + [ ] + {rich(n)}, {rich(v)})' for n, v, _, _ in A.phases(ed.date)) + ')'
     place = R.LOCATION['name']
     note = f'Times are for {place}' + (f'; {R.LOCATION["note"]}' if R.LOCATION.get('note') else ('' if place.endswith('.') else '.'))
-    return (f'<div class="headblock">{kicker("The Almanac")}<h2>Sun, Moon &amp; the {ed.date:%B} Sky</h2>'
-            f'<div class="deck">{note}</div></div>'
-            f'<div class="alm-grid"><div class="box"><div class="boxhead">Today &amp; Tomorrow</div><table class="sun" style="width:100%">{tbl}</table></div>'
-            f'<div class="box"><div class="boxhead">Moon Phases Ahead</div><table class="sun" style="width:100%">{ph}</table>'
-            f'<p class="noind" style="font-size:7.8pt;margin-top:4pt;line-height:1.25">{A.dst_note(ed.date)}</p></div></div>'
-            + cols('almanac', f'<div class="boxhead" style="margin-top:9pt">Sky Calendar</div><table class="cal">{cal}</table>{wd}{look}'
-                   + (srcbox(src[0], src[1], src[2]) if src else '')))
+    head = f'headblock([The Almanac], "h2", {rich(f"Sun, Moon &amp; the {ed.date:%B} Sky")}, {rich(note)})'
+    boxes = (f'grid(columns: (1fr, 1fr), column-gutter: 9pt, ibox({{ boxhead([Today & Tomorrow]); {sun} }}), '
+             f'ibox({{ boxhead([Moon Phases Ahead]); {ph}; small-note({rich(A.dst_note(ed.date))}) }}))')
+    rg = Region('almanac')
+    cal_rows = A.sky_rows(ed.date, ed.alm.get('extra', []), ed.fit['cal_rows'])
+    cal = 'caltable(' + array(f'({rich(("★ " if r.get("star") else "") + r["label"])}, {rich(r["text"])})' for r in cal_rows) + ')'
+    parts = [f'blk({rg.args()}, block(above: 9pt, boxhead([Sky Calendar])))', f'blk({rg.args()}, {cal})']
+    word = ed.alm.get('word')
+    if word:
+        parts.append(f'blk({rg.args()}, word-box({rich(word[0])}, {rich(word[1])}, {rich(word[2])}, {rich(word[3])}))')
+    lk = ed.alm.get('lookup') or A.lookup(ed.date)
+    if ed.fit['lookup'] and lk:
+        parts.append(f'blk({rg.args()}, lookup-box({rich(lk[0])}, {rich(lk[1])}))')
+    src = ed.alm.get('src')
+    if src:
+        parts.append(srcbox(rg, src[0], src[1], src[2]))
+    return code_block([head, boxes, region('almanac', parts)])
 
 
 # ------------------------------------------------------------------ games
 def word(ed):
     pz, P = ed.pz, ed.puzzles
-    parts = []
+    parts = ['headblock([Games], "h2", [Word Play], none)']
     if pz.get('crypt'):
         C = P['cryptogram']
-        crypt = ' '.join(f'<span class="w">{w}</span>' for w in pz['crypt'].split(' '))
-        parts.append(f'<div style="flex:0 0 auto"><div class="ptitle">Cryptogram</div><p class="pinstr">Each letter stands for another. {C.get("intro", "")} '
-                     f'Hint: <b>{pz["hint"][0]} = {pz["hint"][1]}</b>.</p><div class="crypt">{crypt}</div>'
-                     f'<p class="noind" style="text-align:right;font:600 8pt Franklin;margin-top:2pt">&mdash; {pz["crypt_who"]}</p></div>'
-                     f'<div class="rule thick" style="margin:9pt 0 7pt"></div>')
-    lower = ''
+        ws = array(q(w) for w in pz['crypt'].split(' ') if w)
+        hint = f'Each letter stands for another. {C.get("intro", "")} Hint: <b>{pz["hint"][0]} = {pz["hint"][1]}</b>.'
+        parts.append(f'cryptogram({rich(hint)}, {ws}, {rich(pz["crypt_who"])})')
+        parts.append('rule(above: 9pt, below: 7pt, weight: 2pt)')
+    lower = []
     if pz.get('garage'):
         S = P['scramble']
-        scr = ''.join(f'{i}. {s} <span class="blank"></span><br>' for i, (s, _) in enumerate(pz['garage'], 1))
-        lower += f'<div><div class="ptitle">{S["title"]}</div><p class="pinstr">{S["intro"]}</p><div class="scramble">{scr}</div></div>'
+        items = array(f'({q(s)})' for s, _ in pz['garage'])
+        lower.append(f'scramble({rich(S["title"])}, {rich(S["intro"])}, {items})')
     if pz.get('ladder'):
         lad, L = pz['ladder'], P['ladder']
-        rows = ''.join('<tr>' + ''.join(f'<td>{ch if k in (0, len(lad) - 1) else ""}</td>' for ch in w) + '</tr>' for k, w in enumerate(lad))
-        lower += (f'<div><div class="ptitle">Word Ladder</div><p class="pinstr">Turn {lad[0]} into {lad[-1]}, changing one letter per step. '
-                  f'Every rung must be a real word.</p><table class="ladder">{rows}</table>'
-                  f'<p class="pinstr" style="margin-top:5pt">Par: {len(lad) - 2} steps in between. {L.get("note", "")}</p></div>')
+        intro = f'Turn {lad[0]} into {lad[-1]}, changing one letter per step. Every rung must be a real word.'
+        note = f'Par: {len(lad) - 2} steps in between. {L.get("note", "")}'
+        lower.append(f'ladder({array(q(w) for w in lad)}, {rich(intro)}, {rich(note)})')
     if lower:
-        parts.append(f'<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:16pt;flex:0 0 auto">{lower}</div>')
-    return (f'<div class="headblock">{kicker("Games")}<h2>Word Play</h2></div>' + ''.join(parts)
-            + f'<div class="rule thick" style="margin:10pt 0 4pt"></div><div class="boxhead" style="border:0;margin:0">Morning Notes</div>'
-              f'<div class="notes" style="flex:1 1 auto;overflow:hidden">{"<div></div>" * 14}</div>')
+        parts.append(f'grid(columns: (1.25fr, 1fr), column-gutter: 16pt, {", ".join(lower)})')
+    parts.append('rule(above: 10pt, below: 4pt, weight: 2pt)')
+    parts.append('boxhead([Morning Notes], stroke: false, below: 0pt)')
+    parts.append('notes-lines(40, height: 1fr)')
+    return code_block(parts)
+
+
+def sudoku_grid(cells, size, givens=None, small=False):
+    out = []
+    for r in range(9):
+        for c in range(9):
+            v = cells[r * 9 + c]
+            w = 600 if not small else (800 if givens and givens[r * 9 + c] else 500)
+            fs = size * 32 if not small else 7.4
+            out.append(f'sans({fs:.1f}pt, weight: {w}, [{v or ""}])')
+    return f'sudoku-grid({size:.3f}in, {array(out)})'
 
 
 def sudoku(ed):
     pz = ed.pz
-    sd = pz['sudoku']
     lv = R.SUDOKU_LEVELS[pz['sudoku_level']]['label']
-    rows = ''.join('<tr>' + ''.join(f'<td>{sd[r * 9 + c] or ""}</td>' for c in range(9)) + '</tr>' for r in range(9))
-    extra = ''
+    head = (f'block(below: 2pt, {{ kicker([Games]); hed(T.h2, [Sudoku] + h(6pt) + box(baseline: -2pt, caps(9pt, weight: 700, '
+            f'track: 0.14em, {rich("&middot; " + lv)}))); pinstr(above: 3pt, [Fill the grid so every row, column and 3×3 box contains '
+            f'the digits 1 through 9. Sudoku gets a little harder each day from Monday to Sunday.]) }})')
+    parts = [head, 'v(4pt)', f'align(center, {sudoku_grid(pz["sudoku"], R.SIZES["sudoku_cell"])})']
     if pz.get('teasers') and R.SUDOKU_EXTRA == 'teasers':
-        tz = ''.join(f'<div><b>{i}. {t}.</b> {q}</div>' for i, (t, q, a) in enumerate(pz['teasers'], 1))
         src = ed.meta.get('teaser_source', 'stories')
         sub = 'FROM TODAY&rsquo;S STORIES' if src == 'stories' else 'FOR THE COFFEE BREAK'
-        extra = (f'<div class="rule thick" style="margin:12pt 0 6pt"></div>'
-                 f'<div class="ptitle" style="font-size:13pt">Two-Minute Teasers <span style="font:700 7pt Franklin;letter-spacing:.12em">{sub}</span></div>'
-                 f'<div class="teasers">{tz}</div>')
+        tz = array(f'({rich(f"{i}. {t}.")}, {rich(qq)})' for i, (t, qq, _) in enumerate(pz['teasers'], 1))
+        parts += ['rule(above: 12pt, below: 6pt, weight: 2pt)', f'teasers({rich(sub)}, {tz})']
     elif R.SUDOKU_EXTRA in ('kenken', 'futoshiki') and pz.get(R.SUDOKU_EXTRA + '_mini'):
         from .puzzles import extra as PX
-        extra = (f'<div class="rule thick" style="margin:12pt 0 6pt"></div>'
-                 + PX.render(R.SUDOKU_EXTRA + '_mini', pz[R.SUDOKU_EXTRA + '_mini'], small=True))
-    return (f'<div class="headblock">{kicker("Games")}<h2>Sudoku <span style="font:700 9pt Franklin;letter-spacing:.14em;vertical-align:middle">'
-            f'&middot; {lv.upper()}</span></h2><p class="pinstr" style="margin-top:3pt">Fill the grid so every row, column and 3&times;3 box '
-            f'contains the digits 1 through 9. Sudoku gets a little harder each day from Monday to Sunday.</p></div>'
-            f'<table class="sdk" style="flex:0 0 auto">{rows}</table>{extra}')
+        parts += ['rule(above: 12pt, below: 6pt, weight: 2pt)', PX.render(R.SUDOKU_EXTRA + '_mini', pz[R.SUDOKU_EXTRA + '_mini'], small=True)]
+    return code_block(parts)
 
 
-def xw_table(grid, fill=False):
+def xw_table(grid, fill=False, cell=None, letter_pt=7.5):
     nums, _, _ = PZ.entries(grid)
     H, W = len(grid), len(grid[0])
-    h = '<table class="xw">'
+    cell = cell or R.CROSSWORD['cell_in']
+    cells = []
     for r in range(H):
-        h += '<tr>' + ''.join('<td class="b"></td>' if grid[r][c] == '#' else
-                              '<td>' + (f'<span class="num">{nums[(r, c)]}</span>' if (r, c) in nums and not fill else '')
-                              + (f'<span class="let">{grid[r][c]}</span>' if fill else '') + '</td>' for c in range(W)) + '</tr>'
-    return h + '</table>'
+        for c in range(W):
+            if grid[r][c] == '#':
+                cells.append('table.cell(fill: ink, [])')
+            elif fill:
+                cells.append(f'sans({letter_pt}pt, weight: 700, [{grid[r][c]}])')
+            elif (r, c) in nums:
+                cells.append(f'place(top + left, dx: 1.5pt, dy: 1pt, sans(6.3pt, weight: 600, [{nums[(r, c)]}]))')
+            else:
+                cells.append('[]')
+    return f'xw-grid({W}, {H}, {cell:.3f}in, {array(cells)})'
 
 
 def xword(ed):
@@ -249,28 +279,36 @@ def xword(ed):
         return logic(ed, ('kenken', 'futoshiki', 'wordsearch'))
     xw = ed.pz['crossword']
     H, W = len(xw['grid']), len(xw['grid'][0])
-    cl = '<h6>Across</h6>' + ''.join(f'<div><b>{n}</b>{t}</div>' for n, t in xw['across'])
-    cl += '<h6 style="margin-top:6pt">Down</h6>' + ''.join(f'<div><b>{n}</b>{t}</div>' for n, t in xw['down'])
-    shape = f'A {H}-by-{W} grid today.'
-    side = W * R.CROSSWORD['cell_in'] <= (R.PAGE_W - R.MARGIN['inner'] - R.MARGIN['outer']) * 0.47
+    rg = Region('xword')
+    clues = [f'blk({rg.args()}, clue-head([Across]))']
+    clues += [f'blk({rg.args()}, clue({q(n)}, {rich(t)}))' for n, t in xw['across']]
+    clues += [f'blk({rg.args()}, clue-head([Down], above: 6pt))']
+    clues += [f'blk({rg.args()}, clue({q(n)}, {rich(t)}))' for n, t in xw['down']]
     pt = ed.fit.get('xw_pt', 8.1)
-    st = f'font-size:{pt}pt'
-    body = (f'<div style="display:flex;gap:14pt;flex:1 1 auto;min-height:0"><div style="flex:0 0 auto">{xw_table(xw["grid"])}</div>'
-            f'<div class="clues cols" data-slot="xword" style="flex:1 1 auto;{st}">{cl}</div></div>') if side else \
-           (f'<div style="flex:0 0 auto;margin:0 auto">{xw_table(xw["grid"])}</div>'
-            f'<div class="clues cols" data-slot="xword" style="margin-top:10pt;flex:1 1 auto;{st}">{cl}</div>')
-    return (f'<div class="headblock">{kicker("Games")}<h2>The Morning Crossword</h2>'
-            f'<p class="pinstr" style="margin:2pt 0 6pt">{shape} Answers in tomorrow&rsquo;s paper.</p></div>{body}')
+    side = W * R.CROSSWORD['cell_in'] <= (R.PAGE_W - R.MARGIN['inner'] - R.MARGIN['outer']) * 0.47
+    reg = f'text(size: {pt}pt, {region("xword", clues, height="100%")})'
+    head = (f'block(below: 6pt, {{ kicker([Games]); hed(T.h2, [The Morning Crossword]); '
+            f'pinstr(above: 2pt, below: 0pt, [A {H}-by-{W} grid today. Answers in tomorrow’s paper.]) }})')
+    if side:
+        body = f'block(height: 1fr, grid(columns: (auto, 1fr), column-gutter: 14pt, rows: (100%,), {xw_table(xw["grid"])}, {reg}))'
+    else:
+        body = f'align(center, {xw_table(xw["grid"])})\nv(10pt)\nblock(height: 1fr, {reg})'
+    return code_block([head, body])
 
 
 def logic(ed, names=None):
     from .puzzles import extra as PX
     items = [(n, ed.pz[n]) for n in (names or R.LOGIC_PUZZLES) if ed.pz.get(n)][:3]
-    body = ''.join(f'<div class="lp{" wide" if n in ("wordsearch", "nonogram") else ""}">{PX.render(n, p)}</div>' for n, p in items)
+    cells = []
+    for n, p in items:
+        r = PX.render(n, p)
+        cells.append(f'grid.cell(colspan: 2, {r})' if n in ('wordsearch', 'nonogram') else r)
     z = ed.fit.get('logic_zoom', 1.0)
-    return (f'<div class="headblock">{kicker("Games")}<h2>Logic Corner</h2>'
-            f'<p class="pinstr" style="margin:2pt 0 6pt">Pure reasoning, no guessing needed: every puzzle has exactly one solution. '
-            f'Answers in tomorrow&rsquo;s paper.</p></div><div class="logic" style="zoom:{z}">{body}</div>')
+    head = (f'block(below: 6pt, {{ kicker([Games]); hed(T.h2, [Logic Corner]); pinstr(above: 2pt, below: 0pt, [Pure reasoning, '
+            f'no guessing needed: every puzzle has exactly one solution. Answers in tomorrow’s paper.]) }})')
+    body = (f'scale({z * 100:.0f}%, origin: top + left, reflow: true, grid(columns: (1fr, 1fr), column-gutter: 16pt, row-gutter: 12pt, '
+            f'{", ".join(cells) or "[]"}))')
+    return code_block([head, body])
 
 
 # ------------------------------------------------------------------ back page
@@ -291,42 +329,46 @@ def about_text(ed):
 
 
 def answers(prev):
-    """The previous edition's answers (whatever puzzles it had), as an HTML block."""
+    """The previous edition's answers (whatever puzzles it had), as Typst code."""
     from .puzzles import extra as PX
-    sol, giv = prev['sudoku_sol'], prev['sudoku']
-    srows = ''.join('<tr>' + ''.join(f'<td class="{"g" if giv[r * 9 + c] else ""}">{sol[r * 9 + c]}</td>' for c in range(9)) + '</tr>' for r in range(9))
-    xw = f'<div><h5>Crossword</h5>{xw_table(prev["crossword"]["grid"], True)}</div>' if prev.get('crossword') else ''
-    words = ''
+    cols = []
+    if prev.get('crossword'):
+        cols.append(f'stack(ans-head([Crossword]), {xw_table(prev["crossword"]["grid"], True, cell=0.19, letter_pt=7)})')
+    cols.append(f'stack(ans-head([Sudoku]), {sudoku_grid(prev["sudoku_sol"], 0.19, givens=prev["sudoku"], small=True)})')
+    words = []
     if prev.get('crypt_plain'):
         plainq = prev['crypt_plain'].strip().lower()
         plainq = plainq[:1].upper() + plainq[1:]
-        words += f'<h5>Cryptogram</h5><p>&ldquo;{plainq}&rdquo; &mdash; {prev["crypt_who"].title()}</p>'
+        who = prev['crypt_who'].title()
+        words += ['ans-head([Cryptogram])', f'ans-text({rich(f"&ldquo;{plainq}&rdquo; &mdash; {who}")})']
     if prev.get('garage'):
         scr = ' '.join(f'{i}. {w.title()}' for i, (_, w) in enumerate(prev['garage'], 1))
-        words += f'<h5 style="margin-top:5pt">{prev.get("scramble_title", "Scramble")}</h5><p>{scr}</p>'
+        words += [f'block(above: 5pt, ans-head({rich(prev.get("scramble_title", "Scramble"))}))', f'ans-text({rich(scr)})']
     if prev.get('ladder'):
-        words += f'<h5 style="margin-top:5pt">Word Ladder</h5><p>{" &rarr; ".join(prev["ladder"])}</p>'
+        words += ['block(above: 5pt, ans-head([Word Ladder]))', f'ans-text({rich(" &rarr; ".join(prev["ladder"]))})']
     if prev.get('teasers'):
         tz = ' '.join(f'{i}. {a}.' for i, (_, _, a) in enumerate(prev['teasers'], 1))
-        words += f'<h5 style="margin-top:5pt">Teasers</h5><p>{tz}</p>'
+        words += ['block(above: 5pt, ans-head([Teasers]))', f'ans-text({rich(tz)})']
     for name in PX.NAMES:
         if prev.get(name):
-            words += PX.answer(name, prev[name])
-    return f'<div class="ans">{xw}<div><h5>Sudoku</h5><table class="sdk">{srows}</table></div><div>{words}</div></div>'
+            a = PX.answer(name, prev[name])
+            if a:
+                words.append(a)
+    cols.append(f'stack({", ".join(words) or "[]"})')
+    widths = ', '.join(['auto'] * (len(cols) - 1) + ['1fr'])
+    return f'grid(columns: ({widths}), column-gutter: 12pt, {", ".join(cols)})'
 
 
 def back(ed):
     prev, label = ed.prev_puzzles()
     if prev:
-        box = (f'<div class="box" style="flex:0 0 auto"><div class="boxhead" style="display:flex;justify-content:space-between">'
-               f'<span>Answers to {label}</span><span style="font-weight:600;letter-spacing:.06em">Printed upside down</span></div>'
-               f'<div class="upside">{answers(prev)}</div><p class="noind" style="font-size:7.4pt;font-style:italic;margin-top:5pt;text-align:left">'
-               f'Today&rsquo;s answers appear in tomorrow&rsquo;s paper.</p></div>')
+        box = (f'ibox({{ block(below: 5pt, width: 100%, stroke: (bottom: 1.4pt + ink), inset: (bottom: 2pt), grid(columns: (1fr, auto), '
+               f'caps(7.2pt, track: 0.16em, {rich("Answers to " + label)}), caps(7.2pt, weight: 600, track: 0.06em, [Printed upside down]))); '
+               f'upside({answers(prev)}); v(5pt); small-note(emph([Today’s answers appear in tomorrow’s paper.])) }})')
     else:
-        box = '<div class="box" style="flex:0 0 auto"><p class="noind">No previous edition&rsquo;s answers today. Today&rsquo;s appear tomorrow.</p></div>'
-    sl = ''.join(f'<div><b>{t}</b> &middot; {o}</div>' for t, o in ed.source_rows())
-    return (f'<div class="headblock">{kicker("The Back Page")}<h2>Answers &amp; Sources</h2></div>{box}'
-            + cols('back', f'<div class="box shade" style="margin:9pt 0 8pt;font-size:8pt;line-height:1.3"><div class="boxhead">About this paper</div>'
-                   f'<p class="noind" style="text-align:left">{about_text(ed)}</p></div>'
-                   f'<div class="boxhead">Sources</div><div class="srclist">{sl}</div>'
-                   f'<div class="notesbox"><div class="boxhead" style="border:0;margin:9pt 0 0">Notes</div><div class="notes">{"<div></div>" * ed.fit["note_lines"]}</div></div>'))
+        box = 'ibox(par(first-line-indent: 0pt, [No previous edition’s answers today. Today’s appear tomorrow.]))'
+    rg = Region('back')
+    parts = [f'blk({rg.args()}, about-box({rich(about_text(ed))}))', f'blk({rg.args()}, boxhead([Sources]))']
+    parts += [f'blk({rg.args()}, src-row({rich(t)}, {rich(o)}))' for t, o in ed.source_rows()]
+    parts.append(f'blk({rg.args()}, block(above: 9pt, {{ boxhead([Notes], stroke: false, below: 0pt); notes-lines({ed.fit["note_lines"]}) }}))')
+    return code_block(['headblock([The Back Page], "h2", [Answers & Sources], none)', box, region('back', parts)])

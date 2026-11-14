@@ -1,4 +1,4 @@
-"""Build pipeline: puzzles -> render -> automatic fit -> reading PDF -> booklet -> QR check -> contact sheets -> QA.
+"""Build pipeline: puzzles -> layout (Typst) -> automatic fit -> reading PDF -> booklet -> QR check -> contact sheets -> QA.
 
 The fitter adjusts only what the rules allow it to: where the lead jumps from page 1 to 2, where the
 Deep Dive turns from the left page to the right, how many reserve briefs close short columns, how much
@@ -258,14 +258,14 @@ def _story_slot(ed, f, slot, h, fl, changed):
 
 
 def autofit(ed, work, renderer, max_iter=60, log=print):
-    path = os.path.join(work, 'edition.html')
+    path = os.path.join(work, 'edition.typ')
     seen = set()
     f = ed.fit
     all_briefs = list(ed.reserve) + [b for v in f['extra'].values() for b in v]
     best = None
     for it in range(max_iter):
         with open(path, 'w') as fh:
-            fh.write(ed.html())
+            fh.write(ed.source())
         rep_pages = renderer.measure(path)
         S = _slots(rep_pages)
         bad = _badness(S) + sum(1000 for p in rep_pages if p.get('innerOver', 0) > 2 and int(p['n']) not in {v[0] for v in S.values()})
@@ -299,7 +299,7 @@ def autofit(ed, work, renderer, max_iter=60, log=print):
             sid = ed.spread['id']
             _, lh, lf, _ = S[sid + '_l']
             _, rh, rf, _ = S[sid + '_r']
-            c = _break_step(ed, f, ed.spread, 'turn', 'turn_s', min(lf) < R.FILL_STORY and not rh, bool(lh),
+            c = _break_step(ed, f, ed.spread, 'turn', 'turn_s', min(lf) < R.FILL_STORY, bool(lh),
                             len(ed.spread['blocks']), 'turn')
             if c:
                 changed.append(c)
@@ -364,7 +364,7 @@ def autofit(ed, work, renderer, max_iter=60, log=print):
         _restore(ed, best[1], all_briefs)
         log(f'fit: keeping the best state seen (score {best[0]})')
     with open(path, 'w') as fh:
-        fh.write(ed.html())
+        fh.write(ed.source())
     return path
 
 
@@ -527,8 +527,8 @@ def build(date, log=print, allow_py=True, content=None, strict=True):
     log(f'No. {ed.number}, {ed.pages_n} pp, sudoku {ed.pz["sudoku_level"]} {ed.pz["sudoku_stats"]}')
     reading, booklet = os.path.join(work, 'reading.pdf'), os.path.join(work, 'booklet.pdf')
     with Renderer() as r:
-        html_path = autofit(ed, work, r, log=log)
-        rep = r.measure(html_path)
+        src_path = autofit(ed, work, r, log=log)
+        rep = r.measure(src_path)
         r.pdf(reading)
     if R.BOOKLET:
         impose(reading, booklet)
@@ -536,7 +536,7 @@ def build(date, log=print, allow_py=True, content=None, strict=True):
         shutil.copy(reading, booklet)
     qr = qrcheck(reading, ed.printed_urls(), work)
     rows = contact(reading, os.path.join(work, 'c'))
-    with open(html_path) as fh:
+    with open(src_path) as fh:
         err, cos, warn = qa(ed, rep, fh.read(), qr)
     ed.save_puzzles()
     ed.save_fit()

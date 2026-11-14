@@ -10,7 +10,6 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
     NLTK_DATA=/usr/share/nltk_data \
     MC_CONTAINER=1 \
     MC_DATA=/data \
@@ -18,16 +17,14 @@ ENV PYTHONUNBUFFERED=1 \
     PUID=1000 \
     PGID=1000
 
-# cups-client: lp/lpstat for printing; tini reaps the headless browser's processes; libatomic1: Playwright's driver
+# cups-client: lp/lpstat for printing; tini: a proper init for the background build processes
 RUN apt-get update \
- && apt-get install -y --no-install-recommends cups-client tzdata tini fonts-dejavu-core libatomic1 \
+ && apt-get install -y --no-install-recommends cups-client tzdata tini \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt \
- && playwright install --with-deps --only-shell chromium \
- && rm -rf /var/lib/apt/lists/* /root/.cache
+RUN pip install -r requirements.txt && rm -rf /root/.cache
 
 # dictionaries for the crossword clues and the word of the day (WordNet, CMU pronouncing dictionary)
 # (NLTK refuses downloads through an HTTP proxy unless told the fixed nltk_data URLs are fine)

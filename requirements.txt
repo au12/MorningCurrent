@@ -1,6 +1,6 @@
 # The Morning Current (Python 3.11+)
-# layout, PDFs, QR codes
-playwright>=1.44,<2
+# layout (Typst), PDFs, QR codes
+typst>=0.13,<1
 pypdf>=4.0,<8
 pypdfium2>=4.20,<6
 pillow>=10.0,<14

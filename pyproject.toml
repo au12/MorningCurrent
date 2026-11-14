@@ -39,10 +39,10 @@ dependencies = { file = ["requirements.txt"] }
 include = ["mc*"]
 
 [tool.setuptools.package-data]
-mc = ["data/*", "data/fonts/*", "web/templates/*", "web/static/*", "web/static/vendor/*"]
+mc = ["*.typ", "data/*", "data/fonts/*", "data/fonts/ttf/*", "web/templates/*", "web/static/*", "web/static/vendor/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
-markers = ["slow: lays out and prints a whole paper with headless Chromium (about a minute)"]
+markers = ["slow: makes and lays out a whole paper (about half a minute each)"]
 filterwarnings = ["ignore::DeprecationWarning"]
