@@ -23,7 +23,6 @@ import os
 import re
 
 from . import paths, rules as R, almanac as A, puzzles as PZ, templates as T
-from .style import css
 
 EDITIONS = None   # legacy name; use paths.editions_dir()
 
@@ -460,13 +459,20 @@ class Edition:
     def blocks_of(self, st):
         return trimmed_blocks(st, self.fit['trim'].get(st['id'], 0))
 
-    def html(self):
+    def source(self):
+        """The whole edition as Typst source (preamble + one page-frame per page)."""
+        import html as _html
+        from . import style
         if not hasattr(self, 'pz'):
             self.make_puzzles()
-        out = []
+        out = [style.source()]
         for i, (pid, fn, args, sec) in enumerate(self.pages, 1):
-            inner = fn(self, *args)
-            out.append(T.page(i, inner, sec, front=(fn is T.front)).replace('{date}', self.pretty))
-        body = self.resolve(''.join(out))
-        return (f'<!doctype html><html><head><meta charset="utf-8"><title>{R.TITLE}</title><style>{css()}</style>'
-                f'</head><body>{body}</body></html>')
+            out.append(T.page(i, fn(self, *args), sec, front=(fn is T.front)))
+        body = ''.join(out).replace('{date}', _html.unescape(self.pretty).replace('"', ''))
+
+        def f(m):
+            k = m.group(1)
+            if k not in self.page_of:
+                raise KeyError(f'unknown page reference {{p:{k}}}')
+            return _html.unescape(str(self.page_of[k]))
+        return re.sub(r'\{p:([a-z_0-9]+)\}', f, body)

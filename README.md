@@ -17,8 +17,9 @@ Runs entirely without AI; add an API key and Claude writes and researches the st
   The Conversation, Knowable, Mongabay, eLife...) printed whole or trimmed to fit, with photos where the license allows.
   Copyrighted sources appear as their own headline and summary with a QR code to the article.
 - **A real newspaper layout.** Front page with lead story and index, features and split pages, a two-page Deep Dive on the
-  centre spread, Small Wonders briefs, and a back page with every source, answers and notes. The fitter measures every
-  column in a headless browser and trims sentence by sentence until each page is full and nothing overflows.
+  centre spread, Small Wonders briefs, and a back page with every source, answers and notes. Pages are typeset with
+  [Typst](https://typst.app) (justified, hyphenated, real drop caps); the fitter measures every column and trims sentence
+  by sentence until each page is full and nothing overflows.
 - **An almanac for your place.** Sunrise, sunset, moonrise and phases, a week of daylight, the night sky this month
   and what to look for tonight, all computed locally.
 - **Puzzles made fresh each night.** A crossword (clues from WordNet and from the day's stories), sudoku graded by
@@ -98,7 +99,7 @@ Everything else is set in the web UI and stored in `/data/config.yaml`.
    categories that differ, Small Wonders and reserve briefs the fitter can use to close short columns.
 6. **Write** each story within its license (below), add a verified pull quote and photo when allowed, and make the
    puzzles, word of the day and almanac.
-7. **Lay out and fit** in headless Chromium, trimming whole sentences until every column is full; then make the
+7. **Lay out and fit** with Typst (a whole paper compiles in well under a second), trimming whole sentences until every column is full; then make the
    reading PDF and the imposed booklet, decode every QR code, render contact sheets and run QA.
 8. **Publish**: record the paper in the ledger (so stories never repeat), mark its articles used, deliver, and print
    at the scheduled time.
@@ -140,7 +141,6 @@ Python 3.11+ on Linux or macOS:
 ```bash
 git clone https://github.com/au12/MorningCurrent && cd MorningCurrent
 pip install -e .                     # or: pip install -r requirements.txt
-playwright install chromium
 python3 -m mc.words download         # WordNet and the CMU pronouncing dictionary for the puzzles
 MC_DATA=./data python3 -m mc serve   # http://localhost:8080
 ```
@@ -155,7 +155,7 @@ python3 -m mc build 2026-11-16       # re-lay out an existing edition
 python3 -m mc sources test <url>     # try a feed
 ```
 
-Tests: `pip install pytest && pytest` (the two end-to-end tests lay out whole papers and take about a minute;
+Tests: `pip install pytest && pytest` (the two end-to-end tests make whole papers and take under a minute;
 `pytest -m "not slow"` skips them).
 
 ## Project layout
@@ -167,6 +167,7 @@ mc/                 the application (python -m mc)
   ai/               Claude / OpenAI-compatible writing, research and verification
   puzzles/          sudoku, crossword, word puzzles, logic puzzles, daily puzzle inputs
   web/              FastAPI app: press room, settings, reader, scheduler, push API
+  paper.typ         the paper's styles and page parts (Typst)
   build.py, edition.py, templates.py, components.py, style.py, measure.py
                     layout, fitting, PDFs, booklet imposition, QR checks, QA
   almanac.py, words.py, config.py, profiles.py, rules.py, delivery.py, pipeline.py

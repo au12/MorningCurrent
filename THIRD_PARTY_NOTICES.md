@@ -5,7 +5,7 @@ also bundles the following works under their own licenses:
 
 | What | Where | License |
 | --- | --- | --- |
-| Libre Franklin, Playfair Display, Source Serif 4, UnifrakturMaguntia (fonts) | `mc/data/fonts/` | SIL Open Font License 1.1 (license files alongside) |
+| Libre Franklin, Playfair Display, Source Serif 4, UnifrakturMaguntia (fonts; WOFF2 for the web UI, TTF copies in `ttf/` for print) | `mc/data/fonts/` | SIL Open Font License 1.1 (license files alongside) |
 | PDF.js 4.10.38 | `mc/web/static/vendor/pdf*.mjs` | Apache-2.0 (`LICENSE.pdfjs.txt`) |
 | StPageFlip 2.0.7 | `mc/web/static/vendor/page-flip.browser.js` | MIT |
 
@@ -17,9 +17,8 @@ The container image additionally downloads, at build time:
 - **WordNet 3.0** (Princeton University), used for crossword clues and the word of the day, under
   the WordNet license (BSD-style);
 - the **CMU Pronouncing Dictionary**, used for respellings, under a BSD-style license;
-- a headless **Chromium** build from the Playwright project, used to lay out and print the pages,
-  under the Chromium licenses;
-- the Python packages in [requirements.txt](requirements.txt), each under its own license.
+- the Python packages in [requirements.txt](requirements.txt), each under its own license, including the
+  [Typst](https://typst.app) layout engine (Apache-2.0).
   Note that `wordfreq` ships word-frequency data under CC BY-SA 4.0.
 
 ## Content printed in the paper

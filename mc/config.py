@@ -166,7 +166,7 @@ DEFAULT_BLOCKLIST = [
     'congresswoman', 'election*', 'ballot*', 'campaign trail', 'white house', 'prime minister', 'parliament*',
     'impeach*', 'partisan', 'lawmaker*', 'tariff*', 'sanction*', 'supreme court', 'war', 'wars', 'warfare', 'airstrike*',
     'missile*', 'troops', 'invasion', 'ceasefire', 'hostage*', 'terror*', 'militant*', 'genocide', 'military', 'weapon*',
-    'adversar*', 'pentagon', 'anduril', 'drone strike*', 'nuclear weapon*', 'politic*', 'lobbyist*', 'lobbying', 'congressional',
+    'adversar*', 'pentagon', 'anduril', 'drone strike*', 'nuclear weapon*', 'politic*', 'lobbyist*', 'lobbying', 'congressional', 'espionage', 'honey trap*', 'extramarital',
     # sensational, business gloom
     'shocking', 'horrifying', 'outrage*', 'slams', 'feud', 'scandal*', 'layoff*', 'bankrupt*', 'recession', 'stock market',
     'cryptocurrenc*', 'crypto', 'bitcoin', 'celebrity', 'kardashian*',
@@ -192,7 +192,8 @@ class Editorial(BaseModel):
         'lawsuit*', 'cuts', 'deadline', 'disease*', 'invasive', 'poach*', 'smuggl*', 'loss', 'losses', 'deadly', 'risk*',
         # housekeeping and promotion rather than stories
         'shortlist*', 'award*', 'conference', 'webinar', 'apply', 'applications', 'podcast', 'livestream', 'register',
-        'registration', 'nominat*', 'press release', 'hiring', 'internship*', 'funding opportunit*', 'call for', 'outage*'])
+        'registration', 'nominat*', 'press release', 'hiring', 'internship*', 'funding opportunit*', 'call for', 'outage*',
+        'calendar', 'town hall', 'archive', 'apod'])
     upweight: list[str] = Field(default_factory=lambda: [
         'discover*', 'first', 'record', 'rebound*', 'recover*', 'breakthrough*', 'new species', 'surpris*', 'clever',
         'invent*', 'restor*', 'reviv*', 'success*', 'celebrat*', 'solv*', 'found', 'reveal*', 'unexpected', 'curious',

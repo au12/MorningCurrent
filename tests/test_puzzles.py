@@ -68,9 +68,20 @@ def test_logic_puzzles(name):
         runs = lambda line: [len(x) for x in ''.join(line).split('0') if x] or [0]
         assert [runs(r) for r in sol] == [list(x) for x in p['rows']]
         assert [runs(c) for c in zip(*sol)] == [list(x) for x in p['cols']]
-    html = X.render(name, p, small=name.endswith('_mini'))
-    assert '<table' in html
-    assert X.answer(name, p)
+    typeset(X.render(name, p, small=name.endswith('_mini')))
+    typeset(f'stack({X.answer(name, p)})')
+
+
+def typeset(code):
+    """Compile a snippet of puzzle code on a page of the paper (raises if the Typst is invalid)."""
+    import tempfile
+    import typst
+    from mc import config, style
+    config.activate()
+    with tempfile.NamedTemporaryFile('w', suffix='.typ', delete=False) as f:
+        f.write(style.source() + f'#page-frame(14, {{ {code} }})\n')
+    pdf = typst.compile(f.name, font_paths=[style.TTF_DIR], root='/')
+    assert pdf.startswith(b'%PDF')
 
 
 def test_almanac_sun_times(data):

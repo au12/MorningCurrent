@@ -24,7 +24,6 @@ jobs:
       - name: Install
         run: |
           pip install -r requirements.txt pytest
-          playwright install --with-deps --only-shell chromium
           python -m mc.words download
 
       - name: Test
