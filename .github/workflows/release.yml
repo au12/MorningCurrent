@@ -33,7 +33,7 @@ jobs:
       - name: Read version
         id: version
         run: |
-          version="$(grep -oP "__version__ = ['\\"]\\K[^'\\"]+" mc/__init__.py)"
+          version="$(python3 -c "import re; print(re.search(r'__version__\s*=\s*[\x27\x22]([^\x27\x22]+)', open('mc/__init__.py').read()).group(1))")"
           version="$(echo "$version" | tr -d '[:space:]')"
           if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+){1,2}([-+][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::The version must look like 1.2.3 (got '$version')"
