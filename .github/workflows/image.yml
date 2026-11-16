@@ -18,6 +18,13 @@ on:
       - "Dockerfile"
       - "requirements.txt"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: Release version to tag the image with (set by the Release workflow)
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -48,7 +55,8 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ (inputs.version || '') == '' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+            type=raw,value=${{ inputs.version }},enable=${{ (inputs.version || '') != '' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-
